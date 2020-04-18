@@ -131,12 +131,12 @@ public class Day2 {
 
 class InvalidPositionException extends Exception {
     InvalidPositionException(int pos, long address, int arrayLength) {
-        super(String.format("Found incorrect address %d at position %pos of the IntCode (max: %)", address, pos, arrayLength));
+        super(String.format("Found incorrect address %d at position %d of the IntCode (max: %d)", address, pos, arrayLength));
     }
 }
 
 class InvalidOperationException extends Exception {
     InvalidOperationException(int pos, long operation) {
-        super(String.format("Found incorrect operation %d at position %pos", pos, operation));
+        super(String.format("Found incorrect operation %d at position %d", pos, operation));
     }
 }
