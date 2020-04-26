@@ -17,22 +17,20 @@ public class DiagnosticTestRunner {
 
     public OptionalLong runDiagnosticTest() throws ExecutionException, EndOfCodeException {
 
-        boolean firstInstruction = true;
-        OptionalLong output;
+        Instruction.InstructionResult result;
         do {
             Instruction instruction;
             try {
                 instruction = instructionReader.readInstruction();
             } catch (InvalidInstructionException e) {
-                throw new ExecutionException("Error reading instruction at position " + instructionReader.getCurrentPosition(), e);
+                throw new ExecutionException("Error reading instruction at position " + instructionReader.getInstructionPointer(), e);
             }
 
+            //if (instruction.operation == Instruction.Operation.OUTPUT)
+            //    System.out.println(String.format("Output instruction found at position %d: %s", instruction.getPosition(), instruction));
+
             if (instruction.operation == Instruction.Operation.HALT) {
-                if (firstInstruction) {
-                    return OptionalLong.empty();
-                } else {
-                    throw new ExecutionException("Un expected HALT instruction found at position " + instruction.getPosition());
-                }
+                return OptionalLong.empty();
             }
 
             if (instruction.operation == Instruction.Operation.INPUT) {
@@ -40,15 +38,18 @@ public class DiagnosticTestRunner {
             }
 
             try {
-                output = instruction.execute(code);
+                result = instruction.execute(code);
             } catch (InvalidPositionException e) {
                 throw new ExecutionException(instruction, "Error executing instruction at position " + instruction.getPosition(), e);
             }
 
-            firstInstruction = false;
-        } while (!output.isPresent());
+            if (result.getNewPosition().isPresent()) {
+                instructionReader.setInstructionPointer(result.getNewPosition().getAsInt());
+            }
 
-        return output;
+        } while (!result.getOutput().isPresent());
+
+        return result.getOutput();
     }
 
     public void setInput(long input) throws ExecutionException, EndOfCodeException {
@@ -56,7 +57,7 @@ public class DiagnosticTestRunner {
         try {
             inputInstruction = instructionReader.readInstruction();
         } catch (InvalidInstructionException e) {
-            throw new ExecutionException("Error reading instruction at position " + instructionReader.getCurrentPosition(), e);
+            throw new ExecutionException("Error reading instruction at position " + instructionReader.getInstructionPointer(), e);
         }
 
         if (inputInstruction.operation != Instruction.Operation.INPUT) {

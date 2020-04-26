@@ -8,24 +8,15 @@ import static com.challenge.day5.IntCodeComputer.Builder.createIntCodeComputer;
 
 public class Day5 {
     public static void main(String[] args) {
-        //runTests();
-        runDay5();
+        runDay5(getIntComputerCode(), 1L, "Day 5, part 1");
+
+        runDay5(getIntComputerCode(), 5L, "Day 5, part 2");
     }
 
-    private static void runDay5() {
+    private static void runDay5(long [] code, long input, String testDescription) {
         try {
-            IntCodeComputer intCodeComputer = createIntCodeComputer(getIntComputerCode()).withInput(1L).build();
-            List<Long> output = intCodeComputer.computeTests();
-            System.out.println("Output = " + output);
-        } catch (TestComputationException e) {
-            System.out.println("Error computing tests: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private static void runTests() {
-        try {
-            IntCodeComputer intCodeComputer = createIntCodeComputer(getTestCode()).withInput(1L).build();
+            System.out.println("Running diagnostic test: " + testDescription);
+            IntCodeComputer intCodeComputer = createIntCodeComputer(code).withInput(input).build();
             List<Long> output = intCodeComputer.computeTests();
             System.out.println("Output = " + output);
         } catch (TestComputationException e) {

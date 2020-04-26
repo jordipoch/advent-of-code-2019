@@ -101,13 +101,44 @@ public class DiagnosticTestRunnerTest {
         System.out.println("Code after running diagnostic test: " + Arrays.toString(code));
     }
 
-    @Test(expectedExceptions = {com.challenge.day5.exception.ExecutionException.class})
+    @Test
+    public void testRunDiagnosticTestOk_LessThanPositionMode() throws ExecutionException, EndOfCodeException  {
+        long[] code = {7, 6, 7, 5, 104, -1, 5, 10};
+        System.out.println("Code before running diagnostic test: " + Arrays.toString(code));
+
+        DiagnosticTestRunner diagnosticTestRunner = createDiagnosticTestRunner(code).build();
+        OptionalLong output = diagnosticTestRunner.runDiagnosticTest();
+
+        System.out.println("Code after running diagnostic test: " + Arrays.toString(code));
+
+        assertTrue(output.isPresent());
+        assertEquals(output.getAsLong(), 1L, "The output result is incorrect: ");
+        assertTrue(Arrays.equals(code, new long[] {7, 6, 7, 5, 104, 1, 5, 10}), "Unexpected status of the code after execution: ");
+    }
+
+    @Test
+    public void testRunDiagnosticTestOk_EqualsImmediateMode() throws ExecutionException, EndOfCodeException  {
+        long[] code = {1108, 6, 7, 5, 104, -1, 5, 5};
+        System.out.println("Code before running diagnostic test: " + Arrays.toString(code));
+
+        DiagnosticTestRunner diagnosticTestRunner = createDiagnosticTestRunner(code).build();
+        OptionalLong output = diagnosticTestRunner.runDiagnosticTest();
+
+        System.out.println("Code after running diagnostic test: " + Arrays.toString(code));
+
+        assertTrue(output.isPresent());
+        assertEquals(output.getAsLong(), 0L, "The output result is incorrect: ");
+        assertTrue(Arrays.equals(code, new long[] {1108, 6, 7, 5, 104, 0, 5, 5}), "Unexpected status of the code after execution: ");
+
+    }
+
+    /*@Test(expectedExceptions = {com.challenge.day5.exception.ExecutionException.class})
     public void testRunDiagnosticTestKo_UnexpectedHaltInstruction() throws ExecutionException, EndOfCodeException  {
         long[] code = {1, 6, 7, 8, 99, 8, 10, 5, 0};
 
         DiagnosticTestRunner diagnosticTestRunner = createDiagnosticTestRunner(code).build();
         diagnosticTestRunner.runDiagnosticTest();
-    }
+    }*/
 
     @Test(expectedExceptions = {com.challenge.day5.exception.ExecutionException.class})
     public void testRunDiagnosticTestKo_UnexpectedInputInstruction() throws ExecutionException, EndOfCodeException  {

@@ -120,6 +120,96 @@ public class InstructionReaderTest {
         assertEquals(instruction.getParameters().size(), 0, "Incorrect number of parameters read: ");
     }
 
+    @Test
+    public void testValidJumpIfTrueInstructionReading_PositionMode() throws InvalidInstructionException, EndOfCodeException {
+        long[] code = {5, 8, 10};
+
+        InstructionReader instructionReader = createInstructionReader(code).startWithPosition(0).build();
+        Instruction instruction = instructionReader.readInstruction();
+
+        System.out.println("JUMP_IF_TRUE instruction read: " + instruction);
+
+        assertEquals(instruction.operation, Instruction.Operation.JUMP_IF_TRUE, "Incorrect operation read: ");
+        assertEquals(instruction.getParameters().size(), 2, "Incorrect number of parameters read: ");
+
+        Instruction.Parameter param = instruction.getParameters().get(0);
+        assertEquals(param.getValue(), code[1], "Incorrect value read for parameter 1: ");
+        assertEquals(param.getMode(), Instruction.ParameterMode.POSITION_MODE, "Incorrect mode read for parameter 1: ");
+
+        param = instruction.getParameters().get(1);
+        assertEquals(param.getValue(), code[2], "Incorrect value read for parameter 2: ");
+        assertEquals(param.getMode(), Instruction.ParameterMode.POSITION_MODE, "Incorrect mode read for parameter 2: ");
+    }
+
+    @Test
+    public void testValidJumpIfFalseInstructionReading_ImmediateMode() throws InvalidInstructionException, EndOfCodeException {
+        long[] code = {1106, 8, 10};
+
+        InstructionReader instructionReader = createInstructionReader(code).startWithPosition(0).build();
+        Instruction instruction = instructionReader.readInstruction();
+
+        System.out.println("JUMP_IF_FALSE instruction read: " + instruction);
+
+        assertEquals(instruction.operation, Instruction.Operation.JUMP_IF_FALSE, "Incorrect operation read: ");
+        assertEquals(instruction.getParameters().size(), 2, "Incorrect number of parameters read: ");
+
+        Instruction.Parameter param = instruction.getParameters().get(0);
+        assertEquals(param.getValue(), code[1], "Incorrect value read for parameter 1: ");
+        assertEquals(param.getMode(), Instruction.ParameterMode.IMMEDIATE_MODE, "Incorrect mode read for parameter 1: ");
+
+        param = instruction.getParameters().get(1);
+        assertEquals(param.getValue(), code[2], "Incorrect value read for parameter 2: ");
+        assertEquals(param.getMode(), Instruction.ParameterMode.IMMEDIATE_MODE, "Incorrect mode read for parameter 2: ");
+    }
+
+    @Test
+    public void testValidLessThanInstructionReading_PositionMode() throws InvalidInstructionException, EndOfCodeException {
+        long[] code = {7, 8, 10, 11};
+
+        InstructionReader instructionReader = createInstructionReader(code).startWithPosition(0).build();
+        Instruction instruction = instructionReader.readInstruction();
+
+        System.out.println("LESS_THAN instruction read: " + instruction);
+
+        assertEquals(instruction.operation, Instruction.Operation.LESS_THAN, "Incorrect operation read: ");
+        assertEquals(instruction.getParameters().size(), 3, "Incorrect number of parameters read: ");
+
+        Instruction.Parameter param = instruction.getParameters().get(0);
+        assertEquals(param.getValue(), code[1], "Incorrect value read for parameter 1: ");
+        assertEquals(param.getMode(), Instruction.ParameterMode.POSITION_MODE, "Incorrect mode read for parameter 1: ");
+
+        param = instruction.getParameters().get(1);
+        assertEquals(param.getValue(), code[2], "Incorrect value read for parameter 2: ");
+        assertEquals(param.getMode(), Instruction.ParameterMode.POSITION_MODE, "Incorrect mode read for parameter 2: ");
+
+        param = instruction.getParameters().get(2);
+        assertEquals(param.getValue(), code[3], "Incorrect value read for parameter 3: ");
+    }
+
+    @Test
+    public void testValidEqualsInstructionReading_ImmediateMode() throws InvalidInstructionException, EndOfCodeException {
+        long[] code = {1108, 8, 10, 11};
+
+        InstructionReader instructionReader = createInstructionReader(code).startWithPosition(0).build();
+        Instruction instruction = instructionReader.readInstruction();
+
+        System.out.println("LESS_THAN instruction read: " + instruction);
+
+        assertEquals(instruction.operation, Instruction.Operation.EQUALS, "Incorrect operation read: ");
+        assertEquals(instruction.getParameters().size(), 3, "Incorrect number of parameters read: ");
+
+        Instruction.Parameter param = instruction.getParameters().get(0);
+        assertEquals(param.getValue(), code[1], "Incorrect value read for parameter 1: ");
+        assertEquals(param.getMode(), Instruction.ParameterMode.IMMEDIATE_MODE, "Incorrect mode read for parameter 1: ");
+
+        param = instruction.getParameters().get(1);
+        assertEquals(param.getValue(), code[2], "Incorrect value read for parameter 2: ");
+        assertEquals(param.getMode(), Instruction.ParameterMode.IMMEDIATE_MODE, "Incorrect mode read for parameter 2: ");
+
+        param = instruction.getParameters().get(2);
+        assertEquals(param.getValue(), code[3], "Incorrect value read for parameter 3: ");
+    }
+
     @Test(expectedExceptions = {com.challenge.day5.exception.InvalidInstructionException.class})
     public void testInvalidInstructionReading_NumParameters () throws InvalidInstructionException, EndOfCodeException {
         long[] code = {1001, 1, 2};
@@ -147,6 +237,22 @@ public class InstructionReaderTest {
     @Test(expectedExceptions = {com.challenge.day5.exception.EndOfCodeException.class})
     public void testEndOfCodeException () throws InvalidInstructionException, EndOfCodeException {
         long[] code = {};
+
+        InstructionReader instructionReader = createInstructionReader(code).startWithPosition(0).build();
+        instructionReader.readInstruction();
+    }
+
+    @Test(expectedExceptions = {com.challenge.day5.exception.InvalidInstructionException.class})
+    public void testInvalidLessThanInstruction_InvalidParameterMode () throws InvalidInstructionException, EndOfCodeException {
+        long[] code = {10007, 1, 2, 3};
+
+        InstructionReader instructionReader = createInstructionReader(code).startWithPosition(0).build();
+        instructionReader.readInstruction();
+    }
+
+    @Test(expectedExceptions = {com.challenge.day5.exception.InvalidInstructionException.class})
+    public void testInvalidEqualsInstruction_InvalidParameterMode () throws InvalidInstructionException, EndOfCodeException {
+        long[] code = {10008, 1, 2, 3};
 
         InstructionReader instructionReader = createInstructionReader(code).startWithPosition(0).build();
         instructionReader.readInstruction();

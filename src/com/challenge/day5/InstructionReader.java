@@ -23,6 +23,9 @@ public class InstructionReader {
         long initialPos = pos;
         long opCodeAndParamModes = code[pos];
 
+        if (opCodeAndParamModes < 0)
+            throw new InvalidInstructionException(opCodeAndParamModes, initialPos, "Instruction can't be a negative number");
+
         try {
             Instruction.Builder builder = createInstruction(opCodeAndParamModes, pos);
             int numParams = builder.getNumParameters();
@@ -38,17 +41,19 @@ public class InstructionReader {
                 builder = builder.withParameters(params);
             }
 
-
-            pos = pos + numParams + 1;
-            return builder.build();
+            Instruction instruction = builder.build();
+            pos = instruction.getNextInstructionPosition();
+            return instruction;
         } catch (InvalidOperationException | InvalidParameterModesException e) {
             throw new InvalidInstructionException(opCodeAndParamModes, initialPos, e);
         }
     }
 
-    public int getCurrentPosition() {
+    public int getInstructionPointer() {
         return pos;
     }
+
+    public void setInstructionPointer(int newPointer) { this.pos = newPointer; }
 
     public static class Builder {
         long[] code;

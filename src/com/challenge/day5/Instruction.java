@@ -4,7 +4,6 @@ import com.challenge.day5.exception.InvalidOperationException;
 import com.challenge.day5.exception.InvalidParameterModesException;
 import com.challenge.day5.exception.InvalidPositionException;
 
-import javax.swing.text.html.Option;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -33,7 +32,11 @@ public class Instruction {
         return position;
     }
 
-    public OptionalLong execute(long[] code, long ...inputValues) throws InvalidPositionException {
+    public int getNextInstructionPosition() {
+        return position + parameters.size() + 1;
+    }
+
+    public InstructionResult execute(long[] code, long ...inputValues) throws InvalidPositionException {
         return operation.executeInstruction(code, parameters, inputValues);
     }
 
@@ -71,6 +74,37 @@ public class Instruction {
         }
     }
 
+    public static class InstructionResult {
+        OptionalLong output;
+        OptionalInt newPosition;
+
+
+        private InstructionResult(OptionalLong output, OptionalInt newPosition) {
+            this.output = output;
+            this.newPosition = newPosition;
+        }
+
+        public static InstructionResult emptyInstructionResult() {
+            return new InstructionResult(OptionalLong.empty(), OptionalInt.empty());
+        }
+
+        public static InstructionResult ofOutput(OptionalLong output) {
+            return new InstructionResult(output, OptionalInt.empty());
+        }
+
+        public static InstructionResult ofNewPosition(OptionalInt newPosition) {
+            return new InstructionResult(OptionalLong.empty(), newPosition);
+        }
+
+        public OptionalLong getOutput() {
+            return output;
+        }
+
+        public OptionalInt getNewPosition() {
+            return newPosition;
+        }
+    }
+
     enum ParameterMode {
         POSITION_MODE(0), IMMEDIATE_MODE(1);
 
@@ -101,11 +135,11 @@ public class Instruction {
             }
 
             @Override
-            public OptionalLong executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
+            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
                 long result = getParameterValue(parameters.get(0), code) + getParameterValue(parameters.get(1), code);
                 storeInstructionResult(result, parameters.get(2).value, code);
 
-                return OptionalLong.empty();
+                return InstructionResult.emptyInstructionResult();
             }
         },
 
@@ -117,11 +151,11 @@ public class Instruction {
             }
 
             @Override
-            public OptionalLong executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
+            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
                 long result = getParameterValue(parameters.get(0), code) * getParameterValue(parameters.get(1), code);
                 storeInstructionResult(result, parameters.get(2).value, code);
 
-                return OptionalLong.empty();
+                return InstructionResult.emptyInstructionResult();
             }
         },
 
@@ -133,10 +167,10 @@ public class Instruction {
             }
 
             @Override
-            public OptionalLong executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
+            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
                 storeInstructionResult(inputValues[0], parameters.get(0).value, code);
 
-                return OptionalLong.empty();
+                return InstructionResult.emptyInstructionResult();
             }
         },
 
@@ -146,15 +180,79 @@ public class Instruction {
             }
 
             @Override
-            public OptionalLong executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
-                return OptionalLong.of(getParameterValue(parameters.get(0), code));
+            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
+                return InstructionResult.ofOutput(OptionalLong.of(getParameterValue(parameters.get(0), code)));
             }
         },
         HALT(99, 0) {
             public void validateParameters(List<Parameter> parameterList) {}
 
-            public OptionalLong executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) {
-                return OptionalLong.empty();
+            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) {
+                return InstructionResult.emptyInstructionResult();
+            }
+        },
+        JUMP_IF_TRUE(5, 2) {
+            @Override
+            public void validateParameters(List<Parameter> parameterList) {
+            }
+
+            @Override
+            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
+                if (getParameterValue(parameters.get(0), code) != 0) {
+                    return InstructionResult.ofNewPosition(OptionalInt.of((int) getParameterValue(parameters.get(1), code)));
+                } else {
+                    return InstructionResult.emptyInstructionResult();
+                }
+            }
+        },
+        JUMP_IF_FALSE(6, 2) {
+            @Override
+            public void validateParameters(List<Parameter> parameterList) {
+            }
+
+            @Override
+            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
+                if (getParameterValue(parameters.get(0), code) == 0) {
+                    return InstructionResult.ofNewPosition(OptionalInt.of((int) getParameterValue(parameters.get(1), code)));
+                } else {
+                    return InstructionResult.emptyInstructionResult();
+                }
+            }
+        },
+        LESS_THAN(7, 3) {
+            @Override
+            public void validateParameters(List<Parameter> parameterList) throws InvalidParameterModesException {
+                if (parameterList.get(2).mode == ParameterMode.IMMEDIATE_MODE)
+                    throw new InvalidParameterModesException("For the LESS_THAN operation the third parameter must be in position mode");
+            }
+
+            @Override
+            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
+                if (getParameterValue(parameters.get(0), code) < getParameterValue(parameters.get(1), code)) {
+                    storeInstructionResult(1L, parameters.get(2).getValue(), code);
+                } else {
+                    storeInstructionResult(0L, parameters.get(2).getValue(), code);
+                }
+
+                return InstructionResult.emptyInstructionResult();
+            }
+        },
+        EQUALS(8, 3) {
+            @Override
+            public void validateParameters(List<Parameter> parameterList) throws InvalidParameterModesException {
+                if (parameterList.get(2).mode == ParameterMode.IMMEDIATE_MODE)
+                    throw new InvalidParameterModesException("For the EQUALS operation the third parameter must be in position mode");
+            }
+
+            @Override
+            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
+                if (getParameterValue(parameters.get(0), code) == getParameterValue(parameters.get(1), code)) {
+                    storeInstructionResult(1L, parameters.get(2).getValue(), code);
+                } else {
+                    storeInstructionResult(0L, parameters.get(2).getValue(), code);
+                }
+
+                return InstructionResult.emptyInstructionResult();
             }
         };
 
@@ -188,7 +286,7 @@ public class Instruction {
         }
 
         protected void storeInstructionResult(long result, long position, long[] code) throws InvalidPositionException {
-            if (position >= code.length)
+            if (position >= code.length || position < 0)
                 throw new InvalidPositionException("Attempting to store a value to an invalid position", position, code.length);
 
             code[(int) position] = result;
@@ -197,7 +295,7 @@ public class Instruction {
 
 
         public abstract void validateParameters(List<Parameter> parameterList) throws InvalidParameterModesException;
-        public abstract OptionalLong executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException;
+        public abstract InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException;
 
         private static final Map<String, Operation> stringToEnum = Stream.of(values()).collect(toMap(Object::toString, e -> e));
 
