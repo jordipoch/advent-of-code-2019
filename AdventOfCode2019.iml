@@ -6,18 +6,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test" isTestSource="true" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module-library" scope="TEST">
-      <library name="testng">
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/testng-6.14.3.jar!/" />
-          <root url="jar://$MODULE_DIR$/lib/jcommander-1.72.jar!/" />
-          <root url="jar://$MODULE_DIR$/lib/bsh-2.0b6.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
+    <orderEntry type="library" exported="" scope="TEST" name="org.testng:testng:7.1.0" level="project" />
   </component>
 </module>

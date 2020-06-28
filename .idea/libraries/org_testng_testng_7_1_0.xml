@@ -1,0 +1,16 @@
+<component name="libraryTable">
+  <library name="org.testng:testng:7.1.0" type="repository">
+    <properties maven-id="org.testng:testng:7.1.0" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/testng-7.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jcommander-1.72.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/guice-4.1.0-no_aop.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/javax.inject-1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/aopalliance-1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/guava-19.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/snakeyaml-1.21.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
