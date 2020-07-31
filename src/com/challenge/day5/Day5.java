@@ -1,25 +1,27 @@
 package com.challenge.day5;
 
-import com.challenge.day5.exception.TestComputationException;
+import com.challenge.library.intcodecomputer.IntCodeComputer;
+import com.challenge.library.intcodecomputer.exception.IntComputerException;
 
 import java.util.List;
 
-import static com.challenge.day5.IntCodeComputer.Builder.createIntCodeComputer;
+import static com.challenge.library.intcodecomputer.IntCodeComputer.Builder.createNewIntCodeComputer;
 
 public class Day5 {
     public static void main(String[] args) {
         runDay5(getIntComputerCode(), 1L, "Day 5, part 1");
-
         runDay5(getIntComputerCode(), 5L, "Day 5, part 2");
     }
 
     private static void runDay5(long [] code, long input, String testDescription) {
         try {
             System.out.println("Running diagnostic test: " + testDescription);
-            IntCodeComputer intCodeComputer = createIntCodeComputer(code).withInput(input).build();
-            List<Long> output = intCodeComputer.computeTests();
+
+            IntCodeComputer intCodeComputer = createNewIntCodeComputer(code).withInputValue(input).build();
+            List<Long> output = intCodeComputer.executeCode();
+
             System.out.println("Output = " + output);
-        } catch (TestComputationException e) {
+        } catch (IntComputerException e) {
             System.out.println("Error computing tests: " + e.getMessage());
             e.printStackTrace();
         }

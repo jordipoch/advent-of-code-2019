@@ -54,8 +54,6 @@ public class SequencePermutator {
 
             generatePermutations(sequence.length, permutations);
 
-            //System.out.println(String.format("Permutations list (%d): %s", permutations.size(), permutations));
-
             return new SequencePermutator(sequence, permutations);
         }
 
