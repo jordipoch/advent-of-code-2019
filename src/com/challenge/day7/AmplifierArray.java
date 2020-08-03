@@ -10,19 +10,28 @@ import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 
 public class AmplifierArray {
 
-    IntCodeComputer.Builder[] intCodeComputerBuilders;
+    private IntCodeComputer[] amplifiers;
+    private boolean feedbackLoopMode;
 
-    private AmplifierArray(IntCodeComputer.Builder[] intCodeComputerBuilders) {
-        this.intCodeComputerBuilders = intCodeComputerBuilders;
+    private AmplifierArray(IntCodeComputer[] amplifiers, boolean feedbackLoopMode) {
+        this.amplifiers = amplifiers;
+        this.feedbackLoopMode = feedbackLoopMode;
     }
 
     public long calculateAmplificationSignal() throws AmplificationSignalCalculationException {
+        if (feedbackLoopMode)
+            return calculateAmplificationSignalWithFeedbackLoop();
+        else
+            return calculateAmplificationSignalWithoutFeedbackLoop();
+    }
+
+    public long calculateAmplificationSignalWithoutFeedbackLoop() throws AmplificationSignalCalculationException {
         long output = 0;
 
-        for (int i = 0; i < intCodeComputerBuilders.length; i++) {
-            IntCodeComputer intCodeComputer = intCodeComputerBuilders[i].withInputValue(output).build();
+        for (int i = 0; i < amplifiers.length; i++) {
+            IntCodeComputer amplifier = getAndPrepareAmplifier(i, output);
             try {
-                List<Long> executionOutput = intCodeComputer.executeCode();
+                List<Long> executionOutput = amplifier.executeCode();
                 if (executionOutput.size() == 0)
                     throw new AmplificationSignalCalculationException("No output returned from execution in amplifier");
                 output = executionOutput.get(0);
@@ -34,9 +43,47 @@ public class AmplifierArray {
         return output;
     }
 
+    public long calculateAmplificationSignalWithFeedbackLoop() throws AmplificationSignalCalculationException {
+        long output = 0, lastLoopOutput = 0;
+        int loopCount = 0;
+        boolean halt = false;
+
+        while (!halt) {
+            loopCount++;
+            System.out.println("Loop " + loopCount);
+            for (int i = 0; i < amplifiers.length; i++) {
+
+                IntCodeComputer amplifier = getAndPrepareAmplifier(i, output);
+                try {
+                    List<Long> executionOutput = amplifier.executeCode();
+                    if (executionOutput.size() == 0) {
+                        halt = true;
+                        System.out.println(String.format("Halt reached in amplifier %d, loop %d", i, loopCount));
+                        break;
+                    } else
+                        output = executionOutput.get(0);
+                } catch (IntComputerException e) {
+                    throw new AmplificationSignalCalculationException(String.format("Error executing code in amplifier %d, loop %d", i, loopCount), e);
+                }
+            }
+
+            if (!halt)
+                lastLoopOutput = output;
+        }
+
+        return lastLoopOutput;
+    }
+
+    private IntCodeComputer getAndPrepareAmplifier(int amplifierNumber, long input) {
+        IntCodeComputer amplifier = amplifiers[amplifierNumber];
+        amplifier.addInputValue(input);
+        return amplifier;
+    }
+
     public static class Builder {
-        private long[] code;
+        private final long[] code;
         private long[] phaseSettingSequence;
+        private boolean feedbackLoopMode = false;
 
         private Builder(long[] code) {
             this.code = code;
@@ -57,19 +104,22 @@ public class AmplifierArray {
             return this;
         }
 
-        public AmplifierArray build() {
-            IntCodeComputer.Builder[] amplifiers = new IntCodeComputer.Builder[phaseSettingSequence.length];
-
-            for (int i = 0; i < phaseSettingSequence.length; i++) {
-                amplifiers[i] = CreateIntCodeComputerBuilder(phaseSettingSequence[i]);
-            }
-
-            return new AmplifierArray(amplifiers);
+        public Builder withFeedbackLoopMode(boolean feedbackLoopMode) {
+            this.feedbackLoopMode = feedbackLoopMode;
+            return this;
         }
 
-        private IntCodeComputer.Builder CreateIntCodeComputerBuilder(long phaseSetting) {
-            return IntCodeComputer.Builder.createNewIntCodeComputer(code)
-                    .withInputValue(phaseSetting);
+        public AmplifierArray build() {
+            IntCodeComputer[] amplifiers = new IntCodeComputer[phaseSettingSequence.length];
+
+            for (int i = 0; i < phaseSettingSequence.length; i++) {
+                amplifiers[i] = IntCodeComputer.Builder.createNewIntCodeComputer(code)
+                        .withInputValue(phaseSettingSequence[i])
+                        .withFeedbackLoopMode(feedbackLoopMode)
+                        .build();
+            }
+
+            return new AmplifierArray(amplifiers, feedbackLoopMode);
         }
     }
 }

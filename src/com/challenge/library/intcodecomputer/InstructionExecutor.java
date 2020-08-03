@@ -11,14 +11,12 @@ public class InstructionExecutor {
     long[] code;
     int pos;
     List<Long> input;
-    Iterator<Long> inputIterator;
+    int inputIndex;
 
     private InstructionExecutor(long[] code, List<Long> input, int pos) {
         this.code = code;
         this.input = input;
         this.pos = pos;
-
-        this.inputIterator = input.iterator();
     }
 
     public Instruction.InstructionResult executeNextInstruction() throws ExecutionException {
@@ -46,9 +44,13 @@ public class InstructionExecutor {
         return result;
     }
 
+    public void addInputValue(long inputValue) {
+        input.add(inputValue);
+    }
+
     private long getNextInputValue() throws NoMoreInputValuesException {
-        if (inputIterator.hasNext()) {
-            return inputIterator.next();
+        if (inputIndex < input.size()) {
+            return input.get(inputIndex++);
         } else {
             throw new NoMoreInputValuesException();
         }

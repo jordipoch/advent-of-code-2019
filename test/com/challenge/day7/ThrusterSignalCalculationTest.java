@@ -39,4 +39,28 @@ public class ThrusterSignalCalculationTest {
 
         assertEquals(signalToThruster, 65210);
     }
+
+    @Test
+    public void testSimpleCalculation4WithFeedbackMode() throws ThrusterSingalCalculatorException {
+        ThrusterSignalCalculator thrusterSignalCalculator = createThrusterSignalCalculator("testInput4.txt")
+                .withPhaseSettingsSequence(new long[] {5, 6, 7, 8, 9})
+                .withFeedbackLoopMode()
+                .build();
+
+        long signalToThruster = thrusterSignalCalculator.calculateSignal();
+
+        assertEquals(signalToThruster, 139629729);
+    }
+
+    @Test
+    public void testSimpleCalculation5WithFeedbackMode() throws ThrusterSingalCalculatorException {
+        ThrusterSignalCalculator thrusterSignalCalculator = createThrusterSignalCalculator("testInput5.txt")
+                .withPhaseSettingsSequence(new long[] {5, 6, 7, 8, 9})
+                .withFeedbackLoopMode()
+                .build();
+
+        long signalToThruster = thrusterSignalCalculator.calculateSignal();
+
+        assertEquals(signalToThruster, 18216);
+    }
 }

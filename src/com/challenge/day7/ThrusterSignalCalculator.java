@@ -9,20 +9,24 @@ import static com.challenge.day7.AmplifierArray.Builder.createAmplifierArray;
 import static com.challenge.day7.SequencePermutator.Builder.createSequencePermutator;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
 public class ThrusterSignalCalculator {
-    long[] code;
-    SequencePermutator sequencePermutator;
+    private long[] code;
+    private SequencePermutator sequencePermutator;
+    private boolean feedbackLoopMode;
 
-    private ThrusterSignalCalculator(long[] code, SequencePermutator sequencePermutator) {
+    private ThrusterSignalCalculator(long[] code, SequencePermutator sequencePermutator, boolean feedbackLoopMode) {
         this.code = code;
         this.sequencePermutator = sequencePermutator;
+        this.feedbackLoopMode = feedbackLoopMode;
     }
 
     public long calculateSignal() throws ThrusterSingalCalculatorException {
         long maxSignalToThruster = 0;
+        long[] maxSignalPhaseSetting = null;
 
         while (sequencePermutator.hasMoreSequences()) {
             long[] phaseSettingsSequencePermutation = sequencePermutator.getNextSequence();
@@ -31,11 +35,17 @@ public class ThrusterSignalCalculator {
 
                 System.out.println(String.format("Signal %d obtained from phase settings permutation %s", signal, Arrays.toString(phaseSettingsSequencePermutation)));
 
+                if (signal > maxSignalToThruster) {
+                    maxSignalToThruster = signal;
+                    maxSignalPhaseSetting = Arrays.copyOf(phaseSettingsSequencePermutation, phaseSettingsSequencePermutation.length);
+                }
                 maxSignalToThruster = NumberUtils.max(signal, maxSignalToThruster);
             } catch (AmplificationSignalCalculationException e) {
                 throw new ThrusterSingalCalculatorException(String.format("Error calculating signal for phase settings permutation %s", Arrays.toString(phaseSettingsSequencePermutation)), e);
             }
         }
+
+        System.out.println(String.format("%nMax signal %d generated from phase settings %s", maxSignalToThruster, Arrays.toString(maxSignalPhaseSetting)));
 
         return maxSignalToThruster;
     }
@@ -43,14 +53,17 @@ public class ThrusterSignalCalculator {
     private long calculateAmplifierArraySignal(long[] phaseSettingSequence) throws AmplificationSignalCalculationException {
         AmplifierArray amplifierArray = createAmplifierArray(code)
                 .withPhaseSettingSequence(phaseSettingSequence)
+                .withFeedbackLoopMode(feedbackLoopMode)
                 .build();
 
         return amplifierArray.calculateAmplificationSignal();
     }
 
     public static class Builder {
-        String inputFileName;
-        long[] phaseSettingsSequence;
+        private String inputFileName;
+        private long[] phaseSettingsSequence;
+        private boolean feedbackLoopMode;
+
 
         private Builder(String inputFileName) {
             this.inputFileName = inputFileName;
@@ -65,6 +78,11 @@ public class ThrusterSignalCalculator {
             return this;
         }
 
+        public Builder withFeedbackLoopMode() {
+            this.feedbackLoopMode = true;
+            return this;
+        }
+
         public ThrusterSignalCalculator build() throws ThrusterSingalCalculatorException {
             try {
                 long[] intCode = IntCodeLoader
@@ -74,7 +92,7 @@ public class ThrusterSignalCalculator {
                 System.out.println(String.format("Int computer code read: %s", Arrays.toString(intCode)));
                 System.out.println(String.format("Initial phase settings sequence: %s", Arrays.toString(phaseSettingsSequence)));
 
-                return new ThrusterSignalCalculator(intCode, createSequencePermutator(phaseSettingsSequence).build());
+                return new ThrusterSignalCalculator(intCode, createSequencePermutator(phaseSettingsSequence).build(), feedbackLoopMode);
             } catch (IOException e) {
                 throw new ThrusterSingalCalculatorException(String.format("Can't open file \"%s\"", inputFileName), e);
             }

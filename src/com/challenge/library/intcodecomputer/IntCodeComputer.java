@@ -11,9 +11,11 @@ import static com.challenge.library.intcodecomputer.InstructionExecutor.Builder.
 
 public class IntCodeComputer {
     InstructionExecutor instructionExecutor;
+    boolean feedbackLoopMode;
 
-    private IntCodeComputer(InstructionExecutor instructionExecutor) {
+    private IntCodeComputer(InstructionExecutor instructionExecutor, boolean feedbackLoopMode) {
         this.instructionExecutor = instructionExecutor;
+        this.feedbackLoopMode = feedbackLoopMode;
     }
 
     public List<Long> executeCode() throws IntComputerException {
@@ -34,12 +36,18 @@ public class IntCodeComputer {
         return output;
     }
 
+    public void addInputValue(long inputValue) {
+        this.instructionExecutor.addInputValue(inputValue);
+    }
+
     private boolean processResult(Instruction.InstructionResult instructionResult,  List<Long> output) {
         if (instructionResult.isExecutionFinished()) {
             return true;
         } else {
             if (instructionResult.getOutput().isPresent()) {
                 output.add(instructionResult.getOutput().getAsLong());
+                if (feedbackLoopMode)
+                    return true;
             }
 
             if (instructionResult.getNewPosition().isPresent()) {
@@ -53,6 +61,7 @@ public class IntCodeComputer {
     public static class Builder {
         private long[] code;
         private List<Long> input = new ArrayList<>();
+        private boolean feedbackLoopMode;
 
         private Builder(long[] code) {
             this.code = code;
@@ -67,12 +76,17 @@ public class IntCodeComputer {
             return this;
         }
 
+        public Builder withFeedbackLoopMode(boolean feedbackLoopMode) {
+            this.feedbackLoopMode = feedbackLoopMode;
+            return this;
+        }
+
         public IntCodeComputer build() {
-            return new IntCodeComputer(createInstructionExecutor(code)
+            InstructionExecutor instructionExecutor = createInstructionExecutor(code)
                     .startWithPosition(0)
                     .withInput(input)
-                    .build()
-            );
+                    .build();
+            return new IntCodeComputer(instructionExecutor, feedbackLoopMode);
         }
     }
 }
