@@ -9,7 +9,6 @@ import static com.challenge.day7.AmplifierArray.Builder.createAmplifierArray;
 import static com.challenge.day7.SequencePermutator.Builder.createSequencePermutator;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
@@ -39,7 +38,6 @@ public class ThrusterSignalCalculator {
                     maxSignalToThruster = signal;
                     maxSignalPhaseSetting = Arrays.copyOf(phaseSettingsSequencePermutation, phaseSettingsSequencePermutation.length);
                 }
-                maxSignalToThruster = NumberUtils.max(signal, maxSignalToThruster);
             } catch (AmplificationSignalCalculationException e) {
                 throw new ThrusterSingalCalculatorException(String.format("Error calculating signal for phase settings permutation %s", Arrays.toString(phaseSettingsSequencePermutation)), e);
             }
