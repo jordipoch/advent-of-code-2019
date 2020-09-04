@@ -1,12 +1,12 @@
 package com.challenge.day8;
 
 import com.challenge.day8.exception.NoPixelColorException;
-import com.challenge.library.arrays.exception.WrongArraySizeException;
+import com.challenge.library.utils.exception.WrongArraySizeException;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
 
-import static com.challenge.library.arrays.ArrayUtils.splitIntArray;
+import static com.challenge.library.utils.ArrayUtils.splitIntArray;
 
 public class ImageGenerator {
     LayeredImage layeredImage;

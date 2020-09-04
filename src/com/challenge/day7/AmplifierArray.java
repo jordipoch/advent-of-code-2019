@@ -4,6 +4,7 @@ import com.challenge.day7.exception.AmplificationSignalCalculationException;
 import com.challenge.library.intcodecomputer.IntCodeComputer;
 import com.challenge.library.intcodecomputer.exception.IntComputerException;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import static org.apache.commons.lang3.ArrayUtils.isEmpty;
@@ -31,10 +32,10 @@ public class AmplifierArray {
         for (int i = 0; i < amplifiers.length; i++) {
             IntCodeComputer amplifier = getAndPrepareAmplifier(i, output);
             try {
-                List<Long> executionOutput = amplifier.executeCode();
+                List<BigInteger> executionOutput = amplifier.executeCode();
                 if (executionOutput.size() == 0)
                     throw new AmplificationSignalCalculationException("No output returned from execution in amplifier");
-                output = executionOutput.get(0);
+                output = executionOutput.get(0).longValue();
             } catch (IntComputerException e) {
                 throw new AmplificationSignalCalculationException(String.format("Error executing code in amplifier %d", i), e);
             }
@@ -55,13 +56,13 @@ public class AmplifierArray {
 
                 IntCodeComputer amplifier = getAndPrepareAmplifier(i, output);
                 try {
-                    List<Long> executionOutput = amplifier.executeCode();
+                    List<BigInteger> executionOutput = amplifier.executeCode();
                     if (executionOutput.size() == 0) {
                         halt = true;
                         System.out.println(String.format("Halt reached in amplifier %d, loop %d", i, loopCount));
                         break;
                     } else
-                        output = executionOutput.get(0);
+                        output = executionOutput.get(0).longValue();
                 } catch (IntComputerException e) {
                     throw new AmplificationSignalCalculationException(String.format("Error executing code in amplifier %d, loop %d", i, loopCount), e);
                 }

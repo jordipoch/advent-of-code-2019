@@ -1,12 +1,11 @@
 package com.challenge.day8;
 
 import com.challenge.day8.exception.NoPixelColorException;
-import com.challenge.library.arrays.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.OptionalInt;
 
-import static com.challenge.library.arrays.ArrayUtils.transpose2dMatrix;
+import static com.challenge.library.utils.ArrayUtils.transpose2dMatrix;
 import static org.apache.commons.lang3.StringUtils.SPACE;
 import static org.apache.commons.lang3.StringUtils.repeat;
 

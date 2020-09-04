@@ -1,6 +1,6 @@
-package com.challenge.library.arrays;
+package com.challenge.library.utils;
 
-import com.challenge.library.arrays.exception.WrongArraySizeException;
+import com.challenge.library.utils.exception.WrongArraySizeException;
 
 import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 

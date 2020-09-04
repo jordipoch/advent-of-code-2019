@@ -3,6 +3,8 @@ package com.challenge.day5;
 import com.challenge.library.intcodecomputer.IntCodeComputer;
 import com.challenge.library.intcodecomputer.exception.IntComputerException;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.challenge.library.intcodecomputer.IntCodeComputer.Builder.createNewIntCodeComputer;
@@ -13,18 +15,21 @@ public class Day5 {
         runDay5(getIntComputerCode(), 5L, "Day 5, part 2");
     }
 
-    private static void runDay5(long [] code, long input, String testDescription) {
+    public static long runDay5(long [] code, long input, String testDescription) {
+        List<BigInteger> output = new ArrayList<>();
         try {
             System.out.println("Running diagnostic test: " + testDescription);
 
             IntCodeComputer intCodeComputer = createNewIntCodeComputer(code).withInputValue(input).build();
-            List<Long> output = intCodeComputer.executeCode();
+            output = intCodeComputer.executeCode();
 
             System.out.println("Output = " + output);
         } catch (IntComputerException e) {
             System.out.println("Error computing tests: " + e.getMessage());
             e.printStackTrace();
         }
+
+        return output.stream().mapToLong(BigInteger::longValue).filter(o -> o != 0).findFirst().orElse(-1);
     }
 
     public static long[] getTestCode() {

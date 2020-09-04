@@ -3,11 +3,12 @@ package com.challenge.library.intcodecomputer;
 import com.challenge.library.intcodecomputer.exception.ExecutionException;
 import com.challenge.library.intcodecomputer.exception.IntComputerException;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static com.challenge.library.intcodecomputer.InstructionExecutor.Builder.createInstructionExecutor;
+import static com.challenge.library.utils.NumberUtils.convertToLong;
 
 public class IntCodeComputer {
     InstructionExecutor instructionExecutor;
@@ -18,8 +19,8 @@ public class IntCodeComputer {
         this.feedbackLoopMode = feedbackLoopMode;
     }
 
-    public List<Long> executeCode() throws IntComputerException {
-        List<Long> output = new ArrayList<>();
+    public List<BigInteger> executeCode() throws IntComputerException {
+        List<BigInteger> output = new ArrayList<>();
 
         Instruction.InstructionResult instructionResult;
         boolean finished;
@@ -40,18 +41,17 @@ public class IntCodeComputer {
         this.instructionExecutor.addInputValue(inputValue);
     }
 
-    private boolean processResult(Instruction.InstructionResult instructionResult,  List<Long> output) {
+    public List<BigInteger> getMemorySnapshot() {
+        return instructionExecutor.getMemorySnapshot();
+    }
+
+    private boolean processResult(Instruction.InstructionResult instructionResult,  List<BigInteger> output) {
         if (instructionResult.isExecutionFinished()) {
             return true;
         } else {
             if (instructionResult.getOutput().isPresent()) {
-                output.add(instructionResult.getOutput().getAsLong());
-                if (feedbackLoopMode)
-                    return true;
-            }
-
-            if (instructionResult.getNewPosition().isPresent()) {
-                instructionExecutor.setInstructionPointer(instructionResult.getNewPosition().getAsInt());
+                output.add(instructionResult.getOutput().get());
+                return feedbackLoopMode;
             }
 
             return false;
@@ -59,16 +59,20 @@ public class IntCodeComputer {
     }
 
     public static class Builder {
-        private long[] code;
+        private InstructionExecutor.Builder instructionExecutorBuilder;
         private List<Long> input = new ArrayList<>();
         private boolean feedbackLoopMode;
 
-        private Builder(long[] code) {
-            this.code = code;
+        private Builder(InstructionExecutor.Builder instructionExecutorBuilder) {
+            this.instructionExecutorBuilder = instructionExecutorBuilder;
         }
 
         public static Builder createNewIntCodeComputer(long[] code) {
-            return new Builder(Arrays.copyOf(code, code.length));
+            return new Builder(createInstructionExecutor(code));
+        }
+
+        public static Builder createNewIntCodeComputer(BigInteger[] code) {
+            return new Builder(createInstructionExecutor(code));
         }
 
         public Builder withInputValue(long value) {
@@ -81,8 +85,18 @@ public class IntCodeComputer {
             return this;
         }
 
+        public Builder withMemoryAutoExpand() {
+            instructionExecutorBuilder.withMemoryAutoExpand();
+            return this;
+        }
+
+        public Builder withMemoryInitialSize(int initialSize) {
+            instructionExecutorBuilder.withMemoryInitialSize(initialSize);
+            return this;
+        }
+
         public IntCodeComputer build() {
-            InstructionExecutor instructionExecutor = createInstructionExecutor(code)
+            InstructionExecutor instructionExecutor = instructionExecutorBuilder
                     .startWithPosition(0)
                     .withInput(input)
                     .build();

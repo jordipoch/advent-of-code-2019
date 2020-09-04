@@ -3,8 +3,10 @@ package com.challenge.library.intcodecomputer;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 public class IntCodeLoader {
     private static IntCodeLoader instance = new IntCodeLoader();
@@ -30,5 +32,18 @@ public class IntCodeLoader {
         }
 
         return intCode;
+    }
+
+    public BigInteger[] loadBigIntCodeFromFile(Path basePath, String fileName) throws IOException {
+
+        Path filePath = basePath.resolve(Paths.get(fileName));
+
+        String line;
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(filePath.toFile()))) {
+            line = bufferedReader.readLine();
+        }
+
+        String[] strCode = line.split(",");
+        return Arrays.stream(strCode).map(BigInteger::new).toArray(BigInteger[]::new);
     }
 }

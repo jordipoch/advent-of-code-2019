@@ -1,4 +1,4 @@
-package com.challenge.library.arrays.exception;
+package com.challenge.library.utils.exception;
 
 public class WrongArraySizeException extends Exception {
     public WrongArraySizeException(int imageSize, int layerSize) {

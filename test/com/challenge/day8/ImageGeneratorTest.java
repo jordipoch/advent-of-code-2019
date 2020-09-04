@@ -1,7 +1,7 @@
 package com.challenge.day8;
 
 import com.challenge.day8.exception.NoPixelColorException;
-import com.challenge.library.arrays.exception.WrongArraySizeException;
+import com.challenge.library.utils.exception.WrongArraySizeException;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 

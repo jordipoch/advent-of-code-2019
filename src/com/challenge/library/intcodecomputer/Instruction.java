@@ -1,9 +1,12 @@
 package com.challenge.library.intcodecomputer;
 
+import com.challenge.library.intcodecomputer.exception.InvalidInstructionException;
 import com.challenge.library.intcodecomputer.exception.InvalidOperationException;
 import com.challenge.library.intcodecomputer.exception.InvalidParameterModesException;
 import com.challenge.library.intcodecomputer.exception.InvalidPositionException;
+import static com.challenge.library.utils.NumberUtils.convertToInt;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -36,7 +39,7 @@ public class Instruction {
         return position + parameters.size() + 1;
     }
 
-    public InstructionResult execute(long[] code, long ...inputValues) throws InvalidPositionException {
+    public InstructionResult execute(IntCodeMemory code, BigInteger ...inputValues) throws InvalidPositionException {
         return operation.executeInstruction(code, parameters, inputValues);
     }
 
@@ -49,15 +52,15 @@ public class Instruction {
     }
 
     public static class Parameter {
-        private long value;
+        private BigInteger value;
         private ParameterMode mode;
 
-        Parameter(long value, ParameterMode mode) {
+        Parameter(BigInteger value, ParameterMode mode) {
             this.value = value;
             this.mode = mode;
         }
 
-        public long getValue() {
+        public BigInteger getValue() {
             return value;
         }
 
@@ -75,50 +78,48 @@ public class Instruction {
     }
 
     public static class InstructionResult {
-        private final OptionalLong output;
-        private final OptionalInt newPosition;
+        private final BigInteger output;
         private final boolean executionFinished;
 
-
-        private InstructionResult(OptionalLong output, OptionalInt newPosition) {
-            this(output, newPosition, false);
+        private InstructionResult() {
+            this(false);
         }
 
-        private InstructionResult(OptionalLong output, OptionalInt newPosition, boolean executionFinished) {
+        private InstructionResult(boolean executionFinished) {
+            this(null, executionFinished);
+        }
+
+        private InstructionResult(BigInteger output) {
+            this(output, false);
+        }
+
+        private InstructionResult(BigInteger output, boolean executionFinished) {
             this.output = output;
-            this.newPosition = newPosition;
             this.executionFinished = executionFinished;
         }
 
         public static InstructionResult emptyInstructionResult() {
-            return new InstructionResult(OptionalLong.empty(), OptionalInt.empty());
+            return new InstructionResult();
         }
 
         public static InstructionResult endOfExecutionResult() {
-            return new InstructionResult(OptionalLong.empty(), OptionalInt.empty(), true);
+            return new InstructionResult(true);
         }
 
-        public static InstructionResult ofOutput(OptionalLong output) {
-            return new InstructionResult(output, OptionalInt.empty());
+        public static InstructionResult ofOutput(BigInteger output) {
+            Objects.requireNonNull(output, "The output should not be null");
+            return new InstructionResult(output);
         }
 
-        public static InstructionResult ofNewPosition(OptionalInt newPosition) {
-            return new InstructionResult(OptionalLong.empty(), newPosition);
-        }
-
-        public OptionalLong getOutput() {
-            return output;
-        }
-
-        public OptionalInt getNewPosition() {
-            return newPosition;
+        public Optional<BigInteger> getOutput() {
+            return Optional.ofNullable(output);
         }
 
         public boolean isExecutionFinished() { return executionFinished; }
     }
 
     enum ParameterMode {
-        POSITION_MODE(0), IMMEDIATE_MODE(1);
+        POSITION_MODE(0), IMMEDIATE_MODE(1), RELATIVE_MODE(2);
 
         int mode;
 
@@ -143,13 +144,13 @@ public class Instruction {
             @Override
             public void validateParameters(List<Parameter> parameterList) throws InvalidParameterModesException {
                 if (parameterList.get(2).mode == ParameterMode.IMMEDIATE_MODE)
-                    throw new InvalidParameterModesException("For the ADD operation the 3rd parameter must be in position mode");
+                    throw new InvalidParameterModesException("For the ADD operation the 3rd parameter can't be in immediate mode");
             }
 
             @Override
-            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
-                long result = getParameterValue(parameters.get(0), code) + getParameterValue(parameters.get(1), code);
-                storeInstructionResult(result, parameters.get(2).value, code);
+            public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
+                BigInteger result = getParameterValue(parameters.get(0), code).add(getParameterValue(parameters.get(1), code));
+                code.setValue(result, getMemoryPosition(parameters.get(2), code));
 
                 return InstructionResult.emptyInstructionResult();
             }
@@ -159,13 +160,13 @@ public class Instruction {
             @Override
             public void validateParameters(List<Parameter> parameterList) throws InvalidParameterModesException {
                 if (parameterList.get(2).mode == ParameterMode.IMMEDIATE_MODE)
-                    throw new InvalidParameterModesException("For the MULTIPLY operation the 3rd parameter must be in position mode");
+                    throw new InvalidParameterModesException("For the MULTIPLY operation the 3rd parameter can't be in immediate mode");
             }
 
             @Override
-            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
-                long result = getParameterValue(parameters.get(0), code) * getParameterValue(parameters.get(1), code);
-                storeInstructionResult(result, parameters.get(2).value, code);
+            public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
+                BigInteger result = getParameterValue(parameters.get(0), code).multiply(getParameterValue(parameters.get(1), code));
+                code.setValue(result, getMemoryPosition(parameters.get(2), code));
 
                 return InstructionResult.emptyInstructionResult();
             }
@@ -175,12 +176,12 @@ public class Instruction {
             @Override
             public void validateParameters(List<Parameter> parameterList) throws InvalidParameterModesException {
                 if (parameterList.get(0).mode == ParameterMode.IMMEDIATE_MODE)
-                    throw new InvalidParameterModesException("For the INPUT operation the parameter must be in position mode");
+                    throw new InvalidParameterModesException("For the INPUT operation the parameter can't be in immediate mode");
             }
 
             @Override
-            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
-                storeInstructionResult(inputValues[0], parameters.get(0).value, code);
+            public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
+                code.setValue(inputValues[0], getMemoryPosition(parameters.get(0), code));
 
                 return InstructionResult.emptyInstructionResult();
             }
@@ -192,14 +193,14 @@ public class Instruction {
             }
 
             @Override
-            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
-                return InstructionResult.ofOutput(OptionalLong.of(getParameterValue(parameters.get(0), code)));
+            public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
+                return InstructionResult.ofOutput(getParameterValue(parameters.get(0), code));
             }
         },
         HALT(99, 0) {
             public void validateParameters(List<Parameter> parameterList) {}
 
-            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) {
+            public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) {
                 return InstructionResult.endOfExecutionResult();
             }
         },
@@ -209,12 +210,12 @@ public class Instruction {
             }
 
             @Override
-            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
-                if (getParameterValue(parameters.get(0), code) != 0) {
-                    return InstructionResult.ofNewPosition(OptionalInt.of((int) getParameterValue(parameters.get(1), code)));
-                } else {
-                    return InstructionResult.emptyInstructionResult();
+            public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
+                if (getParameterValue(parameters.get(0), code).compareTo(BigInteger.ZERO) != 0) {
+                   code.setCurrentPos(getParameterValue(parameters.get(1), code));
                 }
+
+                return InstructionResult.emptyInstructionResult();
             }
         },
         JUMP_IF_FALSE(6, 2) {
@@ -223,27 +224,27 @@ public class Instruction {
             }
 
             @Override
-            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
-                if (getParameterValue(parameters.get(0), code) == 0) {
-                    return InstructionResult.ofNewPosition(OptionalInt.of((int) getParameterValue(parameters.get(1), code)));
-                } else {
-                    return InstructionResult.emptyInstructionResult();
+            public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
+                if (getParameterValue(parameters.get(0), code).compareTo(BigInteger.ZERO) == 0) {
+                    code.setCurrentPos(getParameterValue(parameters.get(1), code));
                 }
+
+                return InstructionResult.emptyInstructionResult();
             }
         },
         LESS_THAN(7, 3) {
             @Override
             public void validateParameters(List<Parameter> parameterList) throws InvalidParameterModesException {
                 if (parameterList.get(2).mode == ParameterMode.IMMEDIATE_MODE)
-                    throw new InvalidParameterModesException("For the LESS_THAN operation the third parameter must be in position mode");
+                    throw new InvalidParameterModesException("For the LESS_THAN operation the third parameter can't be in immediate mode");
             }
 
             @Override
-            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
-                if (getParameterValue(parameters.get(0), code) < getParameterValue(parameters.get(1), code)) {
-                    storeInstructionResult(1L, parameters.get(2).getValue(), code);
+            public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
+                if (getParameterValue(parameters.get(0), code).compareTo(getParameterValue(parameters.get(1), code)) < 0) {
+                    code.setValue(BigInteger.ONE, getMemoryPosition(parameters.get(2), code));
                 } else {
-                    storeInstructionResult(0L, parameters.get(2).getValue(), code);
+                    code.setValue(BigInteger.ZERO, getMemoryPosition(parameters.get(2), code));
                 }
 
                 return InstructionResult.emptyInstructionResult();
@@ -253,16 +254,28 @@ public class Instruction {
             @Override
             public void validateParameters(List<Parameter> parameterList) throws InvalidParameterModesException {
                 if (parameterList.get(2).mode == ParameterMode.IMMEDIATE_MODE)
-                    throw new InvalidParameterModesException("For the EQUALS operation the third parameter must be in position mode");
+                    throw new InvalidParameterModesException("For the EQUALS operation the third parameter can't be in immediate mode");
             }
 
             @Override
-            public InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException {
-                if (getParameterValue(parameters.get(0), code) == getParameterValue(parameters.get(1), code)) {
-                    storeInstructionResult(1L, parameters.get(2).getValue(), code);
+            public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
+                if (getParameterValue(parameters.get(0), code).compareTo(getParameterValue(parameters.get(1), code)) == 0) {
+                    code.setValue(BigInteger.ONE, getMemoryPosition(parameters.get(2), code));
                 } else {
-                    storeInstructionResult(0L, parameters.get(2).getValue(), code);
+                    code.setValue(BigInteger.ZERO, getMemoryPosition(parameters.get(2), code));
                 }
+
+                return InstructionResult.emptyInstructionResult();
+            }
+        },
+        ADJUST_RELATIVE_BASE(9, 1) {
+            @Override
+            public void validateParameters(List<Parameter> parameterList) {
+            }
+
+            @Override
+            public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
+                code.incrementRelativeBaseOffset(getParameterValue(parameters.get(0), code));
 
                 return InstructionResult.emptyInstructionResult();
             }
@@ -285,19 +298,29 @@ public class Instruction {
             return numParams;
         }
 
-        protected long getParameterValue(Parameter parameter, long[] code) throws InvalidPositionException {
-            if (parameter.getMode() == ParameterMode.IMMEDIATE_MODE) {
-                return parameter.getValue();
-            } else {
-                if (parameter.getValue() < code.length) {
-                    return code[(int) parameter.getValue()];
-                } else {
-                    throw new InvalidPositionException("Attempting to retrieve a value from an invalid position", parameter.getValue(), code.length);
-                }
+        protected BigInteger getParameterValue(Parameter parameter, IntCodeMemory code) throws InvalidPositionException {
+           switch (parameter.getMode()) {
+               case IMMEDIATE_MODE:
+                   return parameter.getValue();
+               case POSITION_MODE:
+                   return code.getValue(parameter.getValue());
+               default: // RELATIVE_MODE
+                   return code.getValue(parameter.getValue().add(code.getRelativeBaseOffset()));
+           }
+        }
+
+        protected BigInteger getMemoryPosition(Parameter parameter, IntCodeMemory code) {
+            switch (parameter.getMode()) {
+                case POSITION_MODE:
+                    return parameter.getValue();
+                case RELATIVE_MODE:
+                    return code.getRelativeBaseOffset().add(parameter.getValue());
+                default: // IMMEDIATE_MODE
+                    throw new IllegalArgumentException("Parameter mode IMMEDIATE_MODE not allowed");
             }
         }
 
-        protected void storeInstructionResult(long result, long position, long[] code) throws InvalidPositionException {
+        protected void storeInstructionResult(BigInteger result, long position, BigInteger[] code) throws InvalidPositionException {
             if (position >= code.length || position < 0)
                 throw new InvalidPositionException("Attempting to store a value to an invalid position", position, code.length);
 
@@ -307,7 +330,7 @@ public class Instruction {
 
 
         public abstract void validateParameters(List<Parameter> parameterList) throws InvalidParameterModesException;
-        public abstract InstructionResult executeInstruction(long[] code, List<Parameter> parameters, long ...inputValues) throws InvalidPositionException;
+        public abstract InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException;
 
         private static final Map<String, Operation> stringToEnum = Stream.of(values()).collect(toMap(Object::toString, e -> e));
 
@@ -337,8 +360,9 @@ public class Instruction {
             return numParameters;
         }
 
-        public static Builder createInstruction(long opCodeAndParamModes, int position) throws InvalidOperationException, InvalidParameterModesException {
-            final int opCode = (int) opCodeAndParamModes % 100;
+        public static Builder createInstruction(int opCodeAndParamModes, int position) throws InvalidOperationException, InvalidParameterModesException {
+
+            final int opCode = opCodeAndParamModes % 100;
             Optional<Operation> optionalOperation = Operation.fromString(Integer.toString(opCode));
             if(optionalOperation.isPresent()) {
                 Operation operation = optionalOperation.get();
@@ -349,11 +373,11 @@ public class Instruction {
             }
         }
 
-        public Builder withParameters(long ...parameters) {
+        public Builder withParameters(BigInteger ...parameters) {
             assert parameters.length == parameterModeList.size();
 
             Iterator<ParameterMode> it = parameterModeList.iterator();
-            for (long param : parameters) {
+            for (BigInteger param : parameters) {
                 parameterList.add(new Parameter(param, it.next()));
             }
 
@@ -365,10 +389,10 @@ public class Instruction {
             return new Instruction(operation, parameterList, position);
         }
 
-        private static List<ParameterMode> getParameterModes(long opCodeAndParamModes, int numParams) throws InvalidParameterModesException {
+        private static List<ParameterMode> getParameterModes(int opCodeAndParamModes, int numParams) throws InvalidParameterModesException {
             List<ParameterMode> parameterModeList = new ArrayList<>();
 
-            long remaining = opCodeAndParamModes/100;
+            int remaining = opCodeAndParamModes/100;
             for (int i = 0; i < numParams; i++) {
                 String strParamMode = Long.toString(remaining%10);
                 Optional<ParameterMode> parameterMode = ParameterMode.fromString(strParamMode);
