@@ -16,4 +16,23 @@ public class NumberUtils {
 
         return number.intValue();
     }
+
+    public static int mcd(int int1, int int2) {
+        if (int1 < 0 || int2 < 0) {
+            return mcd(Math.abs(int1), Math.abs(int2));
+        }
+        if (int1 == int2) {
+            return int1;
+        }
+        if (int1 == 0) {
+            return int2;
+        } else if (int2 == 0){
+            return int1;
+        }
+
+        int max = Math.max(int1, int2);
+        int min = Math.min(int1, int2);
+
+        return mcd(min, max % min);
+    }
 }
