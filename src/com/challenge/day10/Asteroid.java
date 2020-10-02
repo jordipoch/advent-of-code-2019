@@ -1,29 +1,31 @@
 package com.challenge.day10;
 
-import com.challenge.library.geometry.model.Int2DCoord;
+import com.challenge.library.geometry.model.Int2DPoint;
+import com.challenge.library.geometry.model.Int2DVector;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static com.challenge.library.geometry.utils.IntegerGeometryUtils.getAbsoluteDistance;
-import static com.challenge.library.utils.NumberUtils.mcd;
-
+import static com.challenge.library.geometry.utils.IntegerGeometryUtils.calculateIntermediatePositionPoints;
 
 public class Asteroid {
-    private final Int2DCoord position;
+    private final Int2DPoint position;
     private int numAsteroidsVisible;
+
+    private double angle;
+    private int distanceToLaser;
 
     public Asteroid(int xPos, int yPos) {
         this(xPos, yPos, 0);
     }
 
     public Asteroid(int xPos, int yPos, int numAsteroidsVisible) {
-        this.position = new Int2DCoord(xPos, yPos);
+        this.position = new Int2DPoint(xPos, yPos);
         this.numAsteroidsVisible = numAsteroidsVisible;
     }
 
-    public Int2DCoord getPosition() {
+    public Int2DPoint getPosition() {
         return position;
     }
 
@@ -35,70 +37,35 @@ public class Asteroid {
         this.numAsteroidsVisible = numAsteroidsVisible;
     }
 
-    public int getXPos() {
-        return position.getX();
+    public double getAngle() {
+        return angle;
     }
 
-    public int getYPos() {
-        return position.getY();
+    public int getDistanceToLaser() {
+        return distanceToLaser;
     }
 
-    public List<Int2DCoord> getIntermediatePositionsTo(Asteroid otherAsteroid) {
+    public void setAngle(double angle) {
+        this.angle = angle;
+    }
+
+    public void setDistanceToLaser(int distanceToLaser) {
+        this.distanceToLaser = distanceToLaser;
+    }
+
+    public List<Int2DPoint> getIntermediatePositionsTo(Asteroid otherAsteroid) {
 
         if (position.equals(otherAsteroid.getPosition())) {
             return new ArrayList<>();
         }
 
         return calculateIntermediatePositionPoints(position, otherAsteroid.getPosition(),
-                getIncrementFromP1toP2(position, otherAsteroid.getPosition()));
-    }
-
-    private Int2DCoord getIncrementFromP1toP2(Int2DCoord p1, Int2DCoord p2) {
-        Int2DCoord absoluteDistance = getAbsoluteDistance(p1, p2);
-
-        int xIncrement = 0, yIncrement = 0;
-        if (absoluteDistance.getX() == 0 || absoluteDistance.getY() == 0) {
-            if (absoluteDistance.getX() == 0) {
-                yIncrement = 1;
-            } else {
-                xIncrement = 1;
-            }
-        } else {
-            int mcd = mcd(absoluteDistance.getX(), absoluteDistance.getY());
-            xIncrement = absoluteDistance.getX() / mcd;
-            yIncrement = absoluteDistance.getY() / mcd;
-        }
-
-        if (p1.getX() > p2.getX()) {
-            xIncrement = -xIncrement;
-        }
-        if (p1.getY() > p2.getY()) {
-            yIncrement = -yIncrement;
-        }
-
-        return new Int2DCoord(xIncrement, yIncrement);
-    }
-
-    private List<Int2DCoord> calculateIntermediatePositionPoints(Int2DCoord p1, Int2DCoord p2, Int2DCoord increment) {
-        List<Int2DCoord> intermediatePositionsList = new ArrayList<>();
-
-        Int2DCoord position = p1;
-        while (!position.equals(p2)) {
-            position = position.add(increment);
-            if (!position.equals(p2)) {
-                intermediatePositionsList.add(position);
-            }
-        }
-
-        return intermediatePositionsList;
+                new Int2DVector(position, otherAsteroid.getPosition()).normalize());
     }
 
     @Override
     public String toString() {
-        return "Asteroid{" +
-                "position=" + position +
-                ", numAsteroidsVisible=" + numAsteroidsVisible +
-                '}';
+        return position.toString();
     }
 
     @Override
@@ -106,12 +73,11 @@ public class Asteroid {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Asteroid asteroid = (Asteroid) o;
-        return numAsteroidsVisible == asteroid.numAsteroidsVisible &&
-                position.equals(asteroid.position);
+        return position.equals(asteroid.position);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(position, numAsteroidsVisible);
+        return Objects.hash(position);
     }
 }

@@ -1,6 +1,10 @@
 package com.challenge.library.utils;
 
 import java.math.BigInteger;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 public class NumberUtils {
     public static long convertToLong(BigInteger number) {
@@ -34,5 +38,11 @@ public class NumberUtils {
         int min = Math.min(int1, int2);
 
         return mcd(min, max % min);
+    }
+
+    public static String format(double d) {
+        final DecimalFormat decimalFormat = new DecimalFormat("###.####", new DecimalFormatSymbols(Locale.ENGLISH));
+        decimalFormat.setRoundingMode(RoundingMode.HALF_UP);
+        return decimalFormat.format(d);
     }
 }
