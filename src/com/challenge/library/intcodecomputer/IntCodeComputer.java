@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.challenge.library.intcodecomputer.InstructionExecutor.Builder.createInstructionExecutor;
-import static com.challenge.library.utils.NumberUtils.convertToLong;
 
 public class IntCodeComputer {
     InstructionExecutor instructionExecutor;

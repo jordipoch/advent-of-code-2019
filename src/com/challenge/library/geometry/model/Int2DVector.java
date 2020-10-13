@@ -7,6 +7,9 @@ import static com.challenge.library.utils.NumberUtils.mcd;
 public class Int2DVector {
     public static final Int2DVector ZERO = new Int2DVector(0, 0);
     public static final Int2DVector UP = new Int2DVector(0, -1);
+    public static final Int2DVector DOWN = new Int2DVector(0, 1);
+    public static final Int2DVector LEFT = new Int2DVector(-1, 0);
+    public static final Int2DVector RIGHT = new Int2DVector(1, 0);
 
     int x, y;
 

@@ -1,10 +1,8 @@
 package com.challenge.library.intcodecomputer;
 
-import com.challenge.library.intcodecomputer.exception.InvalidInstructionException;
 import com.challenge.library.intcodecomputer.exception.InvalidOperationException;
 import com.challenge.library.intcodecomputer.exception.InvalidParameterModesException;
 import com.challenge.library.intcodecomputer.exception.InvalidPositionException;
-import static com.challenge.library.utils.NumberUtils.convertToInt;
 
 import java.math.BigInteger;
 import java.util.*;
