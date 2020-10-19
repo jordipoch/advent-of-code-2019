@@ -22,6 +22,11 @@ public class HullPaintingRobot {
         this.intCodeComputer = intCodeComputer;
     }
 
+    private HullPaintingRobot(IntCodeComputer intCodeComputer, PanelColor initialColor) {
+        this(intCodeComputer);
+        hullPanelGrid.paintPanel(position, initialColor);
+    }
+
     public static HullPaintingRobot createFromIntCodeComputer(IntCodeComputer intCodeComputer) {
         return new HullPaintingRobot(intCodeComputer);
     }
@@ -33,15 +38,15 @@ public class HullPaintingRobot {
             while (!paintingFinished) {
                 intCodeComputer.addInputValue(hullPanelGrid.getColorAtPosition(position).getColorCode());
 
-                List<BigInteger> executionResult = intCodeComputer.executeCode();
-                if (!executionResult.isEmpty()) {
-                    PanelColor panelColor = fromColorCode(executionResult.get(0).intValue());
+                List<BigInteger> executionOutput = intCodeComputer.executeCode();
+                if (!executionOutput.isEmpty()) {
+                    PanelColor panelColor = fromColorCode(executionOutput.get(0).intValue());
                     hullPanelGrid.paintPanel(position, panelColor);
-                    executionResult = intCodeComputer.executeCode();
-                    if (executionResult.isEmpty()) {
+                    executionOutput = intCodeComputer.executeCode();
+                    if (executionOutput.isEmpty()) {
                         throw new HullPaintingRobotException("Expecting an output value from Int Code Computer execution.");
                     }
-                    Turn turn = fromTurnCode(executionResult.get(0).intValue());
+                    Turn turn = fromTurnCode(executionOutput.get(0).intValue());
                     direction = direction.turn(turn);
                     position = position.add(direction.getDirectionVector());
                 } else {
@@ -57,8 +62,13 @@ public class HullPaintingRobot {
         return hullPanelGrid.getNumPaintedPanels();
     }
 
+    public String getPrintedRegistrationIdentifier() {
+        return hullPanelGrid.getPrintedRegistrationIdentifier();
+    }
+
     public static class Builder {
         IntCodeComputer.Builder intCodeComputerBuilder;
+        PanelColor initialColor;
 
         private Builder(long[] robotCode) {
             intCodeComputerBuilder = createNewIntCodeComputer(robotCode);
@@ -76,12 +86,21 @@ public class HullPaintingRobot {
             return new Builder(robotCode);
         }
 
+        public Builder withInitialColor(PanelColor initialColor) {
+            this.initialColor = initialColor;
+            return this;
+        }
+
         public HullPaintingRobot build() {
             IntCodeComputer intCodeComputer = intCodeComputerBuilder
                     .withFeedbackLoopMode(true)
                     .withMemoryAutoExpand()
                     .build();
-            return new HullPaintingRobot(intCodeComputer);
+            if (initialColor != null) {
+                return new HullPaintingRobot(intCodeComputer, initialColor);
+            } else {
+                return new HullPaintingRobot(intCodeComputer);
+            }
         }
     }
 }

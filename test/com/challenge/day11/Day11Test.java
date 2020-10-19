@@ -15,4 +15,21 @@ public class Day11Test {
 
         assertThat(numPaintedPanels).as("Checking the number of painted panels...").isEqualTo(2276);
     }
+
+    @Test
+    public void testRunDay11Part2() throws IOException, HullPaintingRobotException {
+        String registrationIdentifier = Day11.runDay11Part2();
+
+        // CBLPJZCU
+        String expected = String.format(
+                "..##..###..#....###....##.####..##..#..#...%n" +
+                ".#..#.#..#.#....#..#....#....#.#..#.#..#...%n" +
+                ".#....###..#....#..#....#...#..#....#..#...%n" +
+                ".#....#..#.#....###.....#..#...#....#..#...%n" +
+                ".#..#.#..#.#....#....#..#.#....#..#.#..#...%n" +
+                "..##..###..####.#.....##..####..##...##....%n"
+        );
+
+        assertThat(registrationIdentifier).as("Checking registration identified...").isEqualTo(expected);
+    }
 }

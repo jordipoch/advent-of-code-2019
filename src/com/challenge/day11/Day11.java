@@ -12,6 +12,7 @@ public class Day11 {
     public static void main(String[] args) {
         try {
             runDay11Part1();
+            runDay11Part2();
         } catch (Exception e) {
             System.out.println("Error running day 11 challenge: " + e);
             e.printStackTrace();
@@ -31,5 +32,24 @@ public class Day11 {
         System.out.println("Number of panels painted: " + numPanelsPainted);
 
         return numPanelsPainted;
+    }
+
+    static String runDay11Part2() throws IOException, HullPaintingRobotException {
+        BigInteger[] code = IntCodeLoader
+                .getInstance()
+                .loadBigIntCodeFromFile(Paths.get("resources", "com", "challenge", "day11"), "input.txt");
+
+        System.out.println("Running day 11 challenge, part 2...");
+
+        HullPaintingRobot hullPaintingRobot = createHullPaintingRobot(code)
+                .withInitialColor(PanelColor.WHITE)
+                .build();
+        hullPaintingRobot.paintSpaceShipHull();
+
+        String registrationIdentifier = hullPaintingRobot.getPrintedRegistrationIdentifier();
+
+        System.out.printf("Registration identifier :%n%s", registrationIdentifier);
+
+        return registrationIdentifier;
     }
 }
