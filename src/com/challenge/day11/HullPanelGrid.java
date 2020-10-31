@@ -39,7 +39,11 @@ public class HullPanelGrid {
     }
 
     private HullPanel[][] buildHullPanelArray() {
-        int minX = 0, maxX = 0, minY = 0, maxY = 0;
+        int minX = 0;
+        int maxX = 0;
+        int minY = 0;
+        int maxY = 0;
+
         for(Int2DPoint p : visitedPanelsMap.keySet()) {
             minX = min(minX, p.getX());
             minY = min(minY, p.getY());
@@ -55,8 +59,9 @@ public class HullPanelGrid {
 
         HullPanel[][] hullPanelArray = new HullPanel[arrayHeight][arrayWidth];
 
-        for(Int2DPoint p : visitedPanelsMap.keySet()) {
-            hullPanelArray[p.getY() + yOffset][p.getX() + xOffset] = visitedPanelsMap.get(p);
+        for(Map.Entry<Int2DPoint, HullPanel> entry : visitedPanelsMap.entrySet()) {
+            Int2DPoint p = entry.getKey();
+            hullPanelArray[p.getY() + yOffset][p.getX() + xOffset] = entry.getValue();
         }
 
         return hullPanelArray;

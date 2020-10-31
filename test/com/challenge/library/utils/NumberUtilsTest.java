@@ -3,6 +3,7 @@ package com.challenge.library.utils;
 import org.testng.annotations.Test;
 
 import static com.challenge.library.utils.NumberUtils.mcd;
+import static com.challenge.library.utils.NumberUtils.sign;
 import static org.testng.Assert.*;
 
 public class NumberUtilsTest {
@@ -16,5 +17,12 @@ public class NumberUtilsTest {
         assertEquals(mcd(16, 21), 1);
         assertEquals(mcd(7, 7), 7);
         assertEquals(mcd(0, 0), 0);
+    }
+
+    @Test
+    public void testSign() {
+        assertEquals(sign(0), 0);
+        assertEquals(sign(15), 1);
+        assertEquals(sign(-47), -1);
     }
 }

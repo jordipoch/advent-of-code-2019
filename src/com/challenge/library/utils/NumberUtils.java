@@ -21,6 +21,10 @@ public class NumberUtils {
         return number.intValue();
     }
 
+    public static int sign(int i) {
+        return i < 0 ? -1 : i > 0 ? 1 : 0;
+    }
+
     public static int mcd(int int1, int int2) {
         if (int1 < 0 || int2 < 0) {
             return mcd(Math.abs(int1), Math.abs(int2));
