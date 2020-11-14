@@ -1,6 +1,8 @@
 package com.challenge.day12;
 
 import com.challenge.library.geometry.model.Int3DCoord;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Objects;
 import java.util.Random;
@@ -9,7 +11,9 @@ import static com.challenge.library.utils.NumberUtils.sign;
 
 import static java.lang.Math.abs;
 
-public class Moon {
+public class Moon implements Cloneable {
+    private static final Logger logger = LogManager.getLogger();
+
     private Int3DCoord velocity;
     private Int3DCoord position;
     private MoonName name;
@@ -88,12 +92,19 @@ public class Moon {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Moon moon = (Moon) o;
-        return name == moon.name;
+        return velocity.equals(moon.velocity) &&
+                position.equals(moon.position) &&
+                name == moon.name;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name);
+        return Objects.hash(velocity, position, name);
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 
     public enum MoonName {
