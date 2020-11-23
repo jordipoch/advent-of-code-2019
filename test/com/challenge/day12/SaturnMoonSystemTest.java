@@ -4,7 +4,7 @@ import static com.challenge.day12.SaturnMoonSystem.Builder.createSaturnMoonSyste
 import static com.challenge.day12.SaturnMoonSystem.LogConfiguration.createLogConfiguration;
 import static org.assertj.core.api.Assertions.*;
 
-import com.challenge.library.geometry.model.Int3DCoord;
+import com.challenge.library.geometry.model.mutable.Int3DCoord;
 import org.testng.annotations.Test;
 
 import java.util.Optional;
@@ -54,23 +54,6 @@ public class SaturnMoonSystemTest {
     }
 
     @Test
-    public void test1SimulateAndFindRepeatingStateV2() {
-        SaturnMoonSystem saturnMoonSystem = createSaturnMoonSystemBuilderSystemForTest1()
-                .withLogConfig(createLogConfiguration().everyNSteps(500))
-                .build();
-
-        long result = saturnMoonSystem.simulateAndFindRepeatingStateV2(5000);
-
-        if (result != -1) {
-            System.out.println("Repeating state found: " + result);
-            assertThat(result).as("Checking the repeating state...").isEqualTo(2772);
-        } else {
-            fail("No repeating state found!");
-        }
-    }
-
-
-    @Test
     public void test2SimulateAndFindRepeatingState() {
         SaturnMoonSystem saturnMoonSystem = createSaturnMoonSystemBuilderForTest2()
                 .withLogConfig(createLogConfiguration().everyNSteps(10_000))
@@ -87,12 +70,60 @@ public class SaturnMoonSystemTest {
     }
 
     @Test
+    public void test1SimulateAndFindRepeatingStateV2() {
+        SaturnMoonSystem saturnMoonSystem = createSaturnMoonSystemBuilderSystemForTest1()
+                .withLogConfig(createLogConfiguration().everyNSteps(500))
+                .build();
+
+        long result = saturnMoonSystem.simulateAndFindRepeatingStateV2(5000, 100);
+
+        if (result != -1) {
+            System.out.println("Repeating state found: " + result);
+            assertThat(result).as("Checking the repeating state...").isEqualTo(2772);
+        } else {
+            fail("No repeating state found!");
+        }
+    }
+
+    @Test
     public void test2SimulateAndFindRepeatingStateV2() {
+        SaturnMoonSystem saturnMoonSystem = createSaturnMoonSystemBuilderForTest2()
+                .withLogConfig(createLogConfiguration().everyNSteps(1_000))
+                .build();
+
+       long result = saturnMoonSystem.simulateAndFindRepeatingStateV2(10_000, 100);
+
+        if (result != -1) {
+            System.out.println("Repeating state found: " + result);
+            assertThat(result).as("Checking the repeating state...").isEqualTo(4_686_774_924L);
+        } else {
+            fail("No repeating state found!");
+        }
+    }
+
+    @Test
+    public void test1SimulateAndFindRepeatingStateV3() {
+        SaturnMoonSystem saturnMoonSystem = createSaturnMoonSystemBuilderSystemForTest1()
+                .withLogConfig(createLogConfiguration().everyNSteps(50))
+                .build();
+
+        long result = saturnMoonSystem.simulateAndFindRepeatingStateV3(5000, 100);
+
+        if (result != -1) {
+            System.out.println("Repeating state found: " + result);
+            assertThat(result).as("Checking the repeating state...").isEqualTo(2772);
+        } else {
+            fail("No repeating state found!");
+        }
+    }
+
+    @Test
+    public void test2SimulateAndFindRepeatingStateV3() {
         SaturnMoonSystem saturnMoonSystem = createSaturnMoonSystemBuilderForTest2()
                 .withLogConfig(createLogConfiguration().everyNSteps(10_000))
                 .build();
 
-       long result = saturnMoonSystem.simulateAndFindRepeatingStateV2(1_000_000_000);
+        long result = saturnMoonSystem.simulateAndFindRepeatingStateV3(1_000_000, 10_000);
 
         if (result != -1) {
             System.out.println("Repeating state found: " + result);

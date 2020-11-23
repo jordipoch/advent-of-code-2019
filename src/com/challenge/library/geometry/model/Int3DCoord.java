@@ -19,6 +19,7 @@ public class Int3DCoord {
         return new Int3DCoord(x, y, z);
     }
 
+
     public int getX() {
         return x;
     }

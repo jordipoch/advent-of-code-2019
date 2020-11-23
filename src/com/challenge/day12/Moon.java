@@ -1,8 +1,6 @@
 package com.challenge.day12;
 
-import com.challenge.library.geometry.model.Int3DCoord;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.challenge.library.geometry.model.mutable.Int3DCoord;
 
 import java.util.Objects;
 import java.util.Random;
@@ -12,8 +10,6 @@ import static com.challenge.library.utils.NumberUtils.sign;
 import static java.lang.Math.abs;
 
 public class Moon implements Cloneable {
-    private static final Logger logger = LogManager.getLogger();
-
     private Int3DCoord velocity;
     private Int3DCoord position;
     private MoonName name;
@@ -33,11 +29,11 @@ public class Moon implements Cloneable {
     }
 
     public static Moon createMoon(Int3DCoord position, MoonName name) {
-        return new Moon(position, Int3DCoord.ORIGIN, name);
+        return new Moon(position, Int3DCoord.getOrigin(), name);
     }
 
     public static Moon createMoon(Int3DCoord position) {
-        return new Moon(position, Int3DCoord.ORIGIN, chooseRandomName());
+        return new Moon(position, Int3DCoord.getOrigin(), chooseRandomName());
     }
 
 
@@ -63,19 +59,19 @@ public class Moon implements Cloneable {
     }
 
     public void applyVelocityChange(Int3DCoord v) {
-        velocity = velocity.add(v);
-        position = position.add(velocity);
+        velocity.add(v);
+        position.add(velocity);
     }
 
-    public long calculateTotalEnergy() {
-        long potentialEnergy = calculateEnergy(position);
-        long kineticEnergy = calculateEnergy(velocity);
+    public int calculateTotalEnergy() {
+        int potentialEnergy = calculateEnergy(position);
+        int kineticEnergy = calculateEnergy(velocity);
 
         return potentialEnergy * kineticEnergy;
     }
 
-    private static long calculateEnergy(Int3DCoord p) {
-        return abs((long) p.getX()) + abs(p.getY()) + abs(p.getZ());
+    private static int calculateEnergy(Int3DCoord p) {
+        return abs(p.getX()) + abs(p.getY()) + abs(p.getZ());
     }
 
     private static MoonName chooseRandomName() {
@@ -104,7 +100,12 @@ public class Moon implements Cloneable {
 
     @Override
     protected Object clone() throws CloneNotSupportedException {
-        return super.clone();
+        Moon moon = (Moon) super.clone();
+
+        moon.position = (Int3DCoord) moon.position.clone();
+        moon.velocity = (Int3DCoord) moon.velocity.clone();
+
+        return moon;
     }
 
     public enum MoonName {
