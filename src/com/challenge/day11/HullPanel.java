@@ -1,7 +1,6 @@
 package com.challenge.day11;
 
 import com.challenge.library.geometry.model.Int2DPoint;
-import com.sun.istack.internal.NotNull;
 
 import java.util.Objects;
 
