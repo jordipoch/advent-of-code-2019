@@ -3,11 +3,11 @@ package com.challenge.library.geometry.model;
 import java.util.Objects;
 
 public class Int3DCoord {
-    private int x;
-    private int y;
-    private int z;
+    private final int x;
+    private final int y;
+    private final int z;
 
-    public static Int3DCoord ORIGIN = of(0, 0, 0);
+    public static final Int3DCoord ORIGIN = of(0, 0, 0);
 
     Int3DCoord(int x, int y, int z) {
         this.x = x;
@@ -36,6 +36,16 @@ public class Int3DCoord {
                 x + coord.getX(),
                 y + coord.getY(),
                 z + coord.getZ());
+    }
+
+    public int getDimensionValue(Dimension dimension) {
+        switch (dimension) {
+            case X: return x;
+            case Y: return y;
+            case Z: return z;
+        }
+
+        throw new IllegalArgumentException("Wrong dimension");
     }
 
     @Override

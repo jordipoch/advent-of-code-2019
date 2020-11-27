@@ -3,17 +3,20 @@ package com.challenge.day12;
 import static com.challenge.day12.Moon.createMoon;
 import static com.challenge.day12.SaturnMoonSystemSnapshot.createSaturnMoonSystemSnapshot;
 import static com.challenge.day12.SaturnMoonSystem.LogConfiguration.createLogConfiguration;
+
+import com.challenge.library.geometry.model.Dimension;
 import com.challenge.library.geometry.model.Int3DCoord;
-import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.logging.log4j.Level;
+import static com.challenge.library.utils.NumberUtils.lcm;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class SaturnMoonSystem {
     private static final Logger logger = LogManager.getLogger();
-    private static final long SEQUENCE_LENGTH_TO_FIND = 1_000;
 
     private final List<Moon> moons;
     private long time;
@@ -42,136 +45,86 @@ public class SaturnMoonSystem {
         return time;
     }
 
-    public Optional<RepeatingStateInfo> simulateAndFindRepeatingState(long maxSteps) {
+    public long simulateAndFindRepeatingState(long maxSteps) {
         logger.traceEntry();
 
-        Map<Long, List<SaturnMoonSystemSnapshot>> saturnMoonSystemHistory = new HashMap<>();
+        SaturnMoonSystemSnapshot snapshotAtTime0 = createSaturnMoonSystemSnapshot(moons, time);
+        RepeatingStateStatus status = new RepeatingStateStatus();
 
-        for (long i = 0; i < maxSteps; i++) {
-            if (logConfig.isShowLogAfterSimulatingNSteps(time))
-                logger.debug("Simulating step {}", time);
+        logger.debug(this::toString);
 
+        for (long i = 0; i < maxSteps && !status.isRepeatingStateFound(); i++) {
             applyGravityToMoons();
-            long repeatedStep = checkAndUpdateHistory(saturnMoonSystemHistory);
-
-            if (repeatedStep >= 0) {
-                return logger.traceExit(Optional.of(new RepeatingStateInfo(time, repeatedStep)));
-            }
-            time++;
-        }
-
-        return logger.traceExit(Optional.empty());
-    }
-
-    public long simulateAndFindRepeatingStateV2(long maxSteps) {
-        logger.traceEntry();
-
-        Map<Long, Set<Long>> energySequenceMap = new HashMap<>();
-        long previousEnergy = -1;
-        long repeatingStep = -1;
-        long repeatingSequenceLength = 0;
-        long maxRepeatingSequenceLength = 0;
-
-        boolean repeatingStateFound = false;
-        for (long i = 0; i < maxSteps && !repeatingStateFound; i++) {
-            if (logConfig.isShowLogAfterSimulatingNSteps(time)) {
-                logger.debug("Simulating step {}", time);
-            }
-
-            long energy = calculateTotalEnergy();
-            if (isEnergyRepeated(energy, energySequenceMap)) {
-                if (doesEnergyFollowPreviousSequence(previousEnergy, energy, energySequenceMap)) {
-                    repeatingSequenceLength++;
-                    if (repeatingSequenceLength == SEQUENCE_LENGTH_TO_FIND) {
-                        maxRepeatingSequenceLength = repeatingSequenceLength;
-                        repeatingStateFound = true;
-                        logger.debug("Found repeating energy sequence of length {} starting at step {}!", repeatingSequenceLength, repeatingStep);
-                    }
-                } else {
-                    repeatingStep = time;
-                    maxRepeatingSequenceLength = NumberUtils.max(repeatingSequenceLength, maxRepeatingSequenceLength);
-                    repeatingSequenceLength = 1;
-
-                    addEnergyToFollowingSequence(previousEnergy, energy, energySequenceMap);
-
-                    logger.trace("Energy sequence starts repeating at step {} (current energy does not flow previous one)", repeatingStep);
-                }
-            } else {
-                maxRepeatingSequenceLength = NumberUtils.max(repeatingSequenceLength, maxRepeatingSequenceLength);
-                repeatingSequenceLength = 0;
-                repeatingStep = -1;
-
-                addNewEnergyToSequence(energy, energySequenceMap);
-                if (previousEnergy != -1) {
-                    addEnergyToFollowingSequence(previousEnergy, energy, energySequenceMap);
-                }
-
-                logger.trace("Energy sequence broken with length {} (current energy not found)", repeatingSequenceLength);
-            }
-
-            previousEnergy = energy;
-            applyGravityToMoons();
-
             time++;
 
+            checkRepeatingStatus(snapshotAtTime0, status);
+
             if (logConfig.isShowLogAfterSimulatingNSteps(time)) {
-                logger.debug("After step {}: energy={}, repeating step={}, sequence length={}, max sequence length={})", time, energy, repeatingStep, repeatingSequenceLength, maxRepeatingSequenceLength);
-                if (!repeatingStateFound) {
-                    printEnergySequenceMap(energySequenceMap, Level.TRACE);
-                }
+                logger.debug("Status at step {}:", time);
+                logger.debug("Repeating status {}:", status);
+                logger.debug(this::toString);
+            }
+
+            if (status.isRepeatingStateFound()) {
+                logger.info("repeating state found: {} ", status.getRepeatingStateNum());
+                logger.debug(status);
+                return logger.traceExit(status.getRepeatingStateNum());
             }
         }
 
-        printEnergySequenceMap(energySequenceMap, Level.TRACE);
-        logger.info("Process finished. Max repeating sequence length found: {}", maxRepeatingSequenceLength);
+        logger.info("repeating state not found!");
+        logger.debug(status);
 
-        return logger.traceExit(repeatingStateFound ? repeatingStep : -1);
+        return logger.traceExit(-1L);
     }
 
-    private boolean isEnergyRepeated(long energy, Map<Long, Set<Long>> energySequenceMap) {
-        return energySequenceMap.containsKey(energy);
-    }
+    private void checkRepeatingStatus(SaturnMoonSystemSnapshot snapshot, RepeatingStateStatus status) {
+        if (!status.isXDimFound()) {
+            boolean found = areMoonsEqualIn1Dimension(snapshot, Dimension.X);
+            if (found) {
+                status.setXDimFound(true);
+                status.setRepStepXDim(time);
 
-    private boolean doesEnergyFollowPreviousSequence(long previousEnergy, long currentEnergy, Map<Long, Set<Long>> energySequenceMap) {
-        Set<Long> followingEnergiesInSequence = energySequenceMap.get(previousEnergy);
-        return followingEnergiesInSequence != null && followingEnergiesInSequence.contains(currentEnergy);
-    }
-
-    private void addNewEnergyToSequence(long energy, Map<Long, Set<Long>> energySequenceMap) {
-        energySequenceMap.put(energy, new HashSet<>());
-    }
-
-    private void addEnergyToFollowingSequence(long previousEnergy, long currentEnergy, Map<Long, Set<Long>> energySequenceMap) {
-        energySequenceMap.get(previousEnergy).add(currentEnergy);
-    }
-
-    private void printEnergySequenceMap(Map<Long, Set<Long>> energySequenceMap, Level level) {
-        logger.log(level, "Energy sequence map content:");
-        for (Map.Entry<Long, Set<Long>> sequenceItem : energySequenceMap.entrySet()) {
-            logger.log(level, "{} -> {}", sequenceItem.getKey(), sequenceItem.getValue());
-        }
-    }
-
-    private long checkAndUpdateHistory(Map<Long, List<SaturnMoonSystemSnapshot>> saturnMoonSystemHistory) {
-        logger.traceEntry("Size of saturnMoonSystemHistory: {}", saturnMoonSystemHistory.size());
-
-        long totalEnergy = calculateTotalEnergy();
-        List<SaturnMoonSystemSnapshot> snapshotList = saturnMoonSystemHistory.get(totalEnergy);
-        final SaturnMoonSystemSnapshot currentSnapshot = createSaturnMoonSystemSnapshot(moons, time);
-        if (snapshotList != null) {
-            Optional<SaturnMoonSystemSnapshot> matchingSnapshot = snapshotList.stream().filter(snap -> snap.equals(currentSnapshot)).findFirst();
-            if (matchingSnapshot.isPresent()) {
-                return logger.traceExit(matchingSnapshot.get().getTime());
-            } else {
-                snapshotList.add(currentSnapshot);
+                logger.debug("Matching step found for dimension {} at step {}", Dimension.X, time);
             }
-        } else {
-            snapshotList = new ArrayList<>();
-            snapshotList.add(currentSnapshot);
-            saturnMoonSystemHistory.put(totalEnergy, snapshotList);
         }
 
-        return logger.traceExit(-1);
+        if (!status.isYDimFound()) {
+            boolean found = areMoonsEqualIn1Dimension(snapshot, Dimension.Y);
+            if (found) {
+                status.setYDimFound(true);
+                status.setRepStepYDim(time);
+
+                logger.debug("Matching step found for dimension {} at step {}", Dimension.Y, time);
+            }
+        }
+
+        if (!status.isZDimFound()) {
+            boolean found = areMoonsEqualIn1Dimension(snapshot, Dimension.Z);
+            if (found) {
+                status.setZDimFound(true);
+                status.setRepStepZDim(time);
+
+                logger.debug("Matching step found for dimension {} at step {}", Dimension.Z, time);
+            }
+        }
+    }
+
+    private boolean areMoonsEqualIn1Dimension(SaturnMoonSystemSnapshot snapshot, Dimension dimension) {
+        List<Integer> systemPosDimList = getMoonsDimensionValues(moons, dimension, Moon::getPosition);
+        List<Integer> snapshotPosDimList = getMoonsDimensionValues(snapshot.getMoons(), dimension, Moon::getPosition);
+
+        List<Integer> systemVelDimList = getMoonsDimensionValues(moons, dimension, Moon::getVelocity);
+        List<Integer> snapshotVelDimList = getMoonsDimensionValues(snapshot.getMoons(), dimension, Moon::getVelocity);
+
+        return systemPosDimList.equals(snapshotPosDimList) && systemVelDimList.equals(snapshotVelDimList);
+    }
+
+    private List<Integer> getMoonsDimensionValues(List<Moon> moons, Dimension dimension, Function<Moon, Int3DCoord> coordFunction) {
+        return moons.stream()
+                .map(coordFunction)
+                .map(coord -> coord.getDimensionValue(dimension))
+                .collect(Collectors.toList());
     }
 
     private void applyGravityToMoons() {
@@ -205,6 +158,80 @@ public class SaturnMoonSystem {
     @Override
     public String toString() {
         return String.format("After %d steps: %n%s", time, getMoonsAsString());
+    }
+
+    private static class RepeatingStateStatus {
+        boolean xDimFound;
+        boolean yDimFound;
+        boolean zDimFound;
+        long repStepXDim = -1;
+        long repStepYDim = -1;
+        long repStepZDim = -1;
+
+        boolean isXDimFound() {
+            return xDimFound;
+        }
+
+        void setXDimFound(boolean xDimFound) {
+            this.xDimFound = xDimFound;
+        }
+
+        boolean isYDimFound() {
+            return yDimFound;
+        }
+
+        void setYDimFound(boolean yDimFound) {
+            this.yDimFound = yDimFound;
+        }
+
+        boolean isZDimFound() {
+            return zDimFound;
+        }
+
+        void setZDimFound(boolean zDimFound) {
+            this.zDimFound = zDimFound;
+        }
+
+        long getRepStepXDim() {
+            return repStepXDim;
+        }
+
+        void setRepStepXDim(long repStepXDim) {
+            this.repStepXDim = repStepXDim;
+        }
+
+        long getRepStepYDim() {
+            return repStepYDim;
+        }
+
+        void setRepStepYDim(long repStepYDim) {
+            this.repStepYDim = repStepYDim;
+        }
+
+        long getRepStepZDim() {
+            return repStepZDim;
+        }
+
+        void setRepStepZDim(long repStepZDim) {
+            this.repStepZDim = repStepZDim;
+        }
+
+        public boolean isRepeatingStateFound() {
+            return xDimFound && yDimFound && zDimFound;
+        }
+
+        public long getRepeatingStateNum() {
+            return lcm(repStepXDim, repStepYDim, repStepZDim);
+        }
+
+        @Override
+        public String toString() {
+            return "RepeatingStateStatus{" +
+                    "repStepXDim=" + repStepXDim +
+                    ", repStepYDim=" + repStepYDim +
+                    ", repStepZDim=" + repStepZDim +
+                    '}';
+        }
     }
 
     public static class Builder {

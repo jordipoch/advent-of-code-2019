@@ -1,8 +1,6 @@
 package com.challenge.day12;
 
 import com.challenge.library.geometry.model.Int3DCoord;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Objects;
 import java.util.Random;
@@ -11,17 +9,21 @@ import static com.challenge.library.utils.NumberUtils.sign;
 
 import static java.lang.Math.abs;
 
-public class Moon implements Cloneable {
-    private static final Logger logger = LogManager.getLogger();
-
+public class Moon {
     private Int3DCoord velocity;
     private Int3DCoord position;
-    private MoonName name;
+    private final MoonName name;
 
     private Moon(Int3DCoord position, Int3DCoord velocity, MoonName name) {
         this.position = position;
         this.name = name;
         this.velocity = velocity;
+    }
+
+    private Moon(Moon otherMoon) {
+        this.position = otherMoon.getPosition();
+        this.velocity = otherMoon.getVelocity();
+        this.name = otherMoon.getName();
     }
 
     public static Moon createMoon(Int3DCoord position, Int3DCoord velocity, MoonName name) {
@@ -38,6 +40,10 @@ public class Moon implements Cloneable {
 
     public static Moon createMoon(Int3DCoord position) {
         return new Moon(position, Int3DCoord.ORIGIN, chooseRandomName());
+    }
+
+    public static Moon createMoon(Moon otherMoon) {
+        return new Moon(otherMoon);
     }
 
 
@@ -100,11 +106,6 @@ public class Moon implements Cloneable {
     @Override
     public int hashCode() {
         return Objects.hash(velocity, position, name);
-    }
-
-    @Override
-    protected Object clone() throws CloneNotSupportedException {
-        return super.clone();
     }
 
     public enum MoonName {

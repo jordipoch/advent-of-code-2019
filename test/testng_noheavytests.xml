@@ -1,0 +1,14 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
+
+<suite name="Run all non heavy tests" verbose="1" >
+    <groups>
+        <run>
+            <exclude name="heavy_tests"/>
+        </run>
+    </groups>
+    <test name="test challenge">
+        <packages>
+            <package name="com.challenge.*"></package>
+        </packages>
+    </test>
+</suite>

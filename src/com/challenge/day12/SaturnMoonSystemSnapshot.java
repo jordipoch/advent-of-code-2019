@@ -1,7 +1,6 @@
 package com.challenge.day12;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -14,15 +13,13 @@ class SaturnMoonSystemSnapshot {
         this.time = time;
     }
 
+    public List<Moon> getMoons() {
+        return moons;
+    }
+
     public static SaturnMoonSystemSnapshot createSaturnMoonSystemSnapshot(List<Moon> moons, long time) {
         List<Moon> moonsCopy = new ArrayList<>();
-        moons.forEach( moon -> {
-            try {
-                moonsCopy.add((Moon) moon.clone());
-            } catch (CloneNotSupportedException e) {
-               throw new AssertionError("Error cloning a Moon. This shouldn't happen.", e);
-            }
-        });
+        moons.forEach( moon -> moonsCopy.add(Moon.createMoon(moon)));
 
         return new SaturnMoonSystemSnapshot(moonsCopy, time);
     }
