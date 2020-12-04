@@ -12,9 +12,10 @@
         </File>
     </Appenders>
     <Loggers>
-        <Logger name="com.challenge.day12.SaturnMoonSystem" level="debug" />
         <Root level="info">
             <AppenderRef ref="File"/>
         </Root>
+        <Logger name="com.challenge.day12" level="debug" />
+        <Logger name="com.challenge.day13" level="trace" />
     </Loggers>
 </Configuration>
