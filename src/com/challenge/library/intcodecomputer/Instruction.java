@@ -77,23 +77,23 @@ public class Instruction {
 
     public static class InstructionResult {
         private final BigInteger output;
-        private final boolean executionFinished;
+        private final ResultType resultType;
 
         private InstructionResult() {
-            this(false);
+            this(ResultType.EMPTY);
         }
 
-        private InstructionResult(boolean executionFinished) {
-            this(null, executionFinished);
+        private InstructionResult(ResultType resultType) {
+            this(resultType, null);
         }
 
         private InstructionResult(BigInteger output) {
-            this(output, false);
+            this(ResultType.OUTPUT, output);
         }
 
-        private InstructionResult(BigInteger output, boolean executionFinished) {
+        private InstructionResult(ResultType resultType, BigInteger output) {
+            this.resultType = resultType;
             this.output = output;
-            this.executionFinished = executionFinished;
         }
 
         public static InstructionResult emptyInstructionResult() {
@@ -101,7 +101,11 @@ public class Instruction {
         }
 
         public static InstructionResult endOfExecutionResult() {
-            return new InstructionResult(true);
+            return new InstructionResult(ResultType.EXECUTION_FINISHED);
+        }
+
+        private static InstructionResult inputNeededResult() {
+            return new InstructionResult(ResultType.INPUT_NEEDED);
         }
 
         public static InstructionResult ofOutput(BigInteger output) {
@@ -113,7 +117,19 @@ public class Instruction {
             return Optional.ofNullable(output);
         }
 
-        public boolean isExecutionFinished() { return executionFinished; }
+        public ResultType getResultType() {
+            return resultType;
+        }
+
+        public boolean isExecutionFinished() { return resultType == ResultType.EXECUTION_FINISHED; }
+
+        public boolean isInputNeeded() { return resultType == ResultType.INPUT_NEEDED; }
+
+        public boolean isEmptyResult() { return resultType == ResultType.EMPTY; }
+
+        public enum ResultType {
+            EMPTY, OUTPUT, INPUT_NEEDED, EXECUTION_FINISHED
+        }
     }
 
     enum ParameterMode {
@@ -179,9 +195,12 @@ public class Instruction {
 
             @Override
             public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
-                code.setValue(inputValues[0], getMemoryPosition(parameters.get(0), code));
-
-                return InstructionResult.emptyInstructionResult();
+                if (inputValues[0] != null) {
+                    code.setValue(inputValues[0], getMemoryPosition(parameters.get(0), code));
+                    return InstructionResult.emptyInstructionResult();
+                } else {
+                    return InstructionResult.inputNeededResult();
+                }
             }
         },
 

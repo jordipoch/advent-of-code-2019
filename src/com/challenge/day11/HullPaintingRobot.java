@@ -38,11 +38,11 @@ public class HullPaintingRobot {
             while (!paintingFinished) {
                 intCodeComputer.addInputValue(hullPanelGrid.getColorAtPosition(position).getColorCode());
 
-                List<BigInteger> executionOutput = intCodeComputer.executeCode();
+                List<BigInteger> executionOutput = intCodeComputer.executeCode().getOutput();
                 if (!executionOutput.isEmpty()) {
                     PanelColor panelColor = fromColorCode(executionOutput.get(0).intValue());
                     hullPanelGrid.paintPanel(position, panelColor);
-                    executionOutput = intCodeComputer.executeCode();
+                    executionOutput = intCodeComputer.executeCode().getOutput();
                     if (executionOutput.isEmpty()) {
                         throw new HullPaintingRobotException("Expecting an output value from Int Code Computer execution.");
                     }
@@ -93,7 +93,7 @@ public class HullPaintingRobot {
 
         public HullPaintingRobot build() {
             IntCodeComputer intCodeComputer = intCodeComputerBuilder
-                    .withFeedbackLoopMode(true)
+                    .withFeedbackLoopMode()
                     .withMemoryAutoExpand()
                     .build();
             if (initialColor != null) {

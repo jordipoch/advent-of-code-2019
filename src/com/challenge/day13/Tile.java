@@ -1,31 +1,43 @@
 package com.challenge.day13;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import static java.util.Optional.ofNullable;
+import com.challenge.day13.exception.WrongTileException;
+import com.challenge.library.geometry.model.Int2DPoint;
 
-public enum Tile {
-    EMPTY(0, "E"), WALL(1, "W"), BLOCK(2, "B"), HORIZ_PADDLE(3, "H"), BALL(4, "B");
+public class Tile {
+    Int2DPoint position;
+    TileType tileType;
 
-    private int id;
-    private String abbreviation;
+    public static Tile of(int x, int y, int tileId) throws WrongTileException {
+        if (TileType.fromId(tileId).isPresent()) {
+            return Tile.of(x, y, TileType.fromId(tileId).get());
+        } else {
+            throw new WrongTileException(String.format("Wrong tile Id (%d)", tileId));
+        }
+    }
 
-    Tile(int id, String abbreviation) {
-        this.id = id;
-        this.abbreviation = abbreviation;
+    public static Tile of (int x, int y, TileType tileType) {
+        return new Tile(new Int2DPoint(x, y), tileType);
+    }
+
+    public static Tile of (Int2DPoint tilePos, TileType tileType) {
+        return new Tile(tilePos, tileType);
+    }
+
+    private Tile(Int2DPoint position, TileType tileType) {
+        this.position = position;
+        this.tileType = tileType;
+    }
+
+    public Int2DPoint getPosition() {
+        return position;
+    }
+
+    public TileType getTileType() {
+        return tileType;
     }
 
     @Override
     public String toString() {
-        return abbreviation;
-    }
-
-    private static Map<Integer, Tile> idToTileMap = Stream.of(values()). collect(Collectors.toMap(tile -> tile.id, tile -> tile));
-
-    public static Optional<Tile> fromId(int id) {
-        return ofNullable(idToTileMap.get(id));
+        return String.format("{%s, %s}", position, tileType);
     }
 }

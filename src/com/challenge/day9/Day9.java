@@ -38,7 +38,7 @@ public class Day9 {
                 .withMemoryAutoExpand()
                 .build();
 
-        List<BigInteger> output = intCodeComputer.executeCode();
+        List<BigInteger> output = intCodeComputer.executeCode().getOutput();
 
         return output.get(0);
     }

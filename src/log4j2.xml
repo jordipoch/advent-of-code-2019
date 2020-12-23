@@ -15,7 +15,8 @@
         <Root level="info">
             <AppenderRef ref="File"/>
         </Root>
-        <Logger name="com.challenge.day12" level="debug" />
-        <Logger name="com.challenge.day13" level="trace" />
+        <Logger name="com.challenge.day12" level="info" />
+        <Logger name="com.challenge.day13" level="info" />
+        <Logger name="com.challenge.library" level="info" />
     </Loggers>
 </Configuration>

@@ -74,6 +74,37 @@ public class InstructionExecutorTest {
     }
 
     @Test
+    public void testInputNeededResult() throws ExecutionException {
+        long[] code = {3, 1, 0};
+
+        InstructionExecutor instructionExecutor = createInstructionExecutor(code)
+                .startWithPosition(0)
+                .withInput(new ArrayList<>())
+                .build();
+
+        Instruction.InstructionResult result = instructionExecutor.executeNextInstruction();
+        assertTrue(result.isInputNeeded());
+    }
+
+    @Test
+    public void testInputNeededAndThenInputProvided() throws ExecutionException {
+        long[] code = {3, 2, 0};
+        long input = 2L;
+
+        InstructionExecutor instructionExecutor = createInstructionExecutor(code)
+                .startWithPosition(0)
+                .withInput(new ArrayList<>())
+                .build();
+
+        instructionExecutor.executeNextInstruction();
+        instructionExecutor.addInputValue(input);
+        Instruction.InstructionResult result = instructionExecutor.executeNextInstruction();
+
+        assertTrue(result.isEmptyResult());
+        assertEquals(instructionExecutor.getMemorySnapshot().get(2).longValue(), input);
+    }
+
+    @Test
     public void testRelativeBaseOffset() throws ExecutionException {
         long[] code = {109, 7, 22201, -1, 0, 1, 3, 2, 0};
 
@@ -185,25 +216,6 @@ public class InstructionExecutorTest {
             System.out.println("Exception: " + e);
             System.out.println("Inner exception: " + e.getCause());
             assertTrue(e.getCause() instanceof InvalidPositionException);
-            throw e;
-        }
-    }
-
-    @Test(expectedExceptions = {ExecutionException.class})
-    public void testNoMoreInputValuesError() throws ExecutionException {
-        long[] code = {3, 10};
-
-        InstructionExecutor instructionExecutor = createInstructionExecutor(code)
-                .startWithPosition(0)
-                .withInput(new ArrayList<>())
-                .build();
-
-        try {
-            instructionExecutor.executeNextInstruction();
-        } catch (ExecutionException e) {
-            System.out.println("Exception: " + e);
-            System.out.println("Inner exception: " + e.getCause());
-            assertTrue(e.getCause() instanceof NoMoreInputValuesException);
             throw e;
         }
     }

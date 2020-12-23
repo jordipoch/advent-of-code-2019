@@ -1,6 +1,8 @@
 package com.challenge.library.intcodecomputer;
 
 import com.challenge.library.intcodecomputer.exception.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -9,6 +11,8 @@ import java.util.stream.Collectors;
 import static com.challenge.library.intcodecomputer.IntCodeMemory.Builder.createIntCodeMemory;
 
 public class InstructionExecutor {
+    private static final Logger logger = LogManager.getLogger();
+
     IntCodeMemory code;
     List<BigInteger> input;
     int inputIndex;
@@ -31,10 +35,13 @@ public class InstructionExecutor {
         try {
             if (instruction.getOperation() == Instruction.Operation.INPUT) {
                 result = instruction.execute(code, getNextInputValue());
+                if (result.isInputNeeded()) {
+                    code.goBackToPreviousPosition();
+                }
             } else {
                 result = instruction.execute(code);
             }
-        } catch (InvalidPositionException | NoMoreInputValuesException e) {
+        } catch (InvalidPositionException e) {
             throw new ExecutionException(instruction, "Error executing instruction", e);
         }
 
@@ -43,17 +50,22 @@ public class InstructionExecutor {
 
     public void addInputValue(long inputValue) {
         input.add(BigInteger.valueOf(inputValue));
+        logger.trace("Input added. Input index = {}, Input list = {}", inputIndex, input);
+    }
+
+    public void rewindLastInstruction() {
+        code.goBackToPreviousPosition();
     }
 
     public List<BigInteger> getMemorySnapshot() {
         return code.getSnapshot();
     }
 
-    private BigInteger getNextInputValue() throws NoMoreInputValuesException {
+    private BigInteger getNextInputValue() {
         if (inputIndex < input.size()) {
             return input.get(inputIndex++);
         } else {
-            throw new NoMoreInputValuesException();
+            return null;
         }
     }
 

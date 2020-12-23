@@ -32,8 +32,8 @@ public class AmplifierArray {
         for (int i = 0; i < amplifiers.length; i++) {
             IntCodeComputer amplifier = getAndPrepareAmplifier(i, output);
             try {
-                List<BigInteger> executionOutput = amplifier.executeCode();
-                if (executionOutput.size() == 0)
+                List<BigInteger> executionOutput = amplifier.executeCode().getOutput();
+                if (executionOutput.isEmpty())
                     throw new AmplificationSignalCalculationException("No output returned from execution in amplifier");
                 output = executionOutput.get(0).longValue();
             } catch (IntComputerException e) {
@@ -45,7 +45,8 @@ public class AmplifierArray {
     }
 
     public long calculateAmplificationSignalWithFeedbackLoop() throws AmplificationSignalCalculationException {
-        long output = 0, lastLoopOutput = 0;
+        long output = 0;
+        long lastLoopOutput = 0;
         int loopCount = 0;
         boolean halt = false;
 
@@ -56,8 +57,8 @@ public class AmplifierArray {
 
                 IntCodeComputer amplifier = getAndPrepareAmplifier(i, output);
                 try {
-                    List<BigInteger> executionOutput = amplifier.executeCode();
-                    if (executionOutput.size() == 0) {
+                    List<BigInteger> executionOutput = amplifier.executeCode().getOutput();
+                    if (executionOutput.isEmpty()) {
                         halt = true;
                         System.out.println(String.format("Halt reached in amplifier %d, loop %d", i, loopCount));
                         break;

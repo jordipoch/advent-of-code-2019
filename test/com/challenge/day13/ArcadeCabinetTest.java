@@ -2,8 +2,10 @@ package com.challenge.day13;
 
 import com.challenge.day13.exception.ArcadeCabinetException;
 import com.challenge.library.intcodecomputer.IntCodeComputer;
+import com.challenge.library.intcodecomputer.IntCodeComputer.ExecutionResult;
+import static com.challenge.library.intcodecomputer.IntCodeComputer.ExecutionResult.Builder.createExecutionResult;
 import com.challenge.library.intcodecomputer.exception.IntComputerException;
-import static com.challenge.day13.ArcadeCabinet.Builder.createArcadeCabinet;
+import static com.challenge.day13.ArcadeCabinet.Builder.createArcadeCabinetDemo;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -82,12 +84,23 @@ public class ArcadeCabinetTest {
 
         IntCodeComputer mockedComputer = mock(IntCodeComputer.class);
 
-        when(mockedComputer.executeCode()).thenReturn(outputList);
+        when(mockedComputer.executeCode()).thenReturn(createExecutionResultFromOutputList(outputList));
 
-        final ArcadeCabinet arcadeCabinet = createArcadeCabinet()
+        final ArcadeCabinet arcadeCabinet = createArcadeCabinetDemo()
                 .withIntCodeComputer(mockedComputer)
                 .build();
 
         return arcadeCabinet.runGame();
+    }
+
+    private ExecutionResult createExecutionResultFromOutputList(List<BigInteger> outputList) {
+        ExecutionResult.Builder builder = createExecutionResult()
+                .withResultType(ExecutionResult.ResultType.EXECUTION_FINISHED);
+
+        for (BigInteger output: outputList) {
+            builder.addOutputValue(output);
+        }
+
+        return builder.build();
     }
 }

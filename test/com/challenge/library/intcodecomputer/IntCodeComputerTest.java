@@ -1,7 +1,9 @@
 package com.challenge.library.intcodecomputer;
 
 import com.challenge.library.intcodecomputer.exception.IntComputerException;
+import com.challenge.library.intcodecomputer.IntCodeComputer.ExecutionResult;
 
+import com.challenge.library.intcodecomputer.exception.NoMoreInputValuesException;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 
@@ -24,8 +26,10 @@ public class IntCodeComputerTest {
                 .withInputValue(200)
                 .build();
 
-        List<BigInteger> output = intCodeComputer.executeCode();
+        ExecutionResult result = intCodeComputer.executeCode();
+        List<BigInteger> output = result.getOutput();
 
+        assertTrue(result.isExecutionFinished());
         assertEquals(output.size(), 1);
         System.out.println("Execution result: " + output.get(0));
         assertEquals(output.get(0).longValue(), 2004L);
@@ -41,8 +45,10 @@ public class IntCodeComputerTest {
                 .withMemoryAutoExpand()
                 .build();
 
-        List<BigInteger> output = intCodeComputer.executeCode();
+        ExecutionResult result = intCodeComputer.executeCode();
+        List<BigInteger> output = result.getOutput();
 
+        assertTrue(result.isExecutionFinished());
         assertEquals(output.size(), code.length);
         System.out.println("Execution result: " + output);
         System.out.println("Memory snapshot" + intCodeComputer.getMemorySnapshot());
@@ -58,7 +64,8 @@ public class IntCodeComputerTest {
                 .withMemoryAutoExpand()
                 .build();
 
-        List<BigInteger> output = intCodeComputer.executeCode();
+        ExecutionResult result = intCodeComputer.executeCode();
+        List<BigInteger> output = result.getOutput();
 
         System.out.println("Execution result: " + output);
         System.out.println("Memory snapshot:" + intCodeComputer.getMemorySnapshot());
@@ -78,12 +85,52 @@ public class IntCodeComputerTest {
                 .withMemoryAutoExpand()
                 .build();
 
-        List<BigInteger> output = intCodeComputer.executeCode();
+        ExecutionResult result = intCodeComputer.executeCode();
+        List<BigInteger> output = result.getOutput();
 
         System.out.println("Execution result: " + output);
         System.out.println("Memory snapshot:" + intCodeComputer.getMemorySnapshot());
 
         assertEquals(output.get(0), biCode[1]);
+    }
+
+    @Test
+    public void testAskForInput() throws IntComputerException {
+        long[] code = {3, 2, 0};
+        System.out.println("Code to execute: " + Arrays.toString(code));
+
+        IntCodeComputer intCodeComputer = createNewIntCodeComputer(code)
+                .withAskForInputMode()
+                .build();
+
+        ExecutionResult result = intCodeComputer.executeCode();
+        assertTrue(result.isInputNeeded());
+        assertFalse(result.hasAnyOutput());
+
+        System.out.println("Execution result: " + result);
+    }
+
+    @Test
+    public void testAskForInputAndThenProvideInput() throws IntComputerException {
+        long[] code = {3, 4, 4, 4, 0};
+        System.out.println("Code to execute: " + Arrays.toString(code));
+
+        final long outputValue = 15L;
+
+        IntCodeComputer intCodeComputer = createNewIntCodeComputer(code)
+                .withFeedbackLoopMode()
+                .withAskForInputMode()
+                .build();
+
+        intCodeComputer.executeCode();
+        intCodeComputer.addInputValue(outputValue);
+        ExecutionResult result = intCodeComputer.executeCode();
+
+        assertTrue(result.isNextOutput());
+        assertTrue(result.hasAnyOutput());
+        assertEquals(result.getOutput().get(0).longValue(), outputValue);
+
+        System.out.println("Execution result: " + result);
     }
 
     @Test
@@ -104,7 +151,6 @@ public class IntCodeComputerTest {
         assertEquals(output.longValue(), 77944L);
     }
 
-
     @Test (expectedExceptions = {IntComputerException.class})
     public void testIntCodeComputerError() throws IntComputerException {
         long[] code = {3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0};
@@ -122,6 +168,26 @@ public class IntCodeComputerTest {
         }
     }
 
+    @Test (expectedExceptions = {IntComputerException.class})
+    public void testMissingInputWithoutAskForInputMode() throws IntComputerException {
+        long[] code = {3, 4, 4, 4, 0};
+        System.out.println("Code to execute: " + Arrays.toString(code));
+
+        IntCodeComputer intCodeComputer = createNewIntCodeComputer(code)
+                .withFeedbackLoopMode()
+                .build();
+
+        try {
+            intCodeComputer.executeCode();
+        } catch (IntComputerException e) {
+            Throwable cause = e.getCause();
+            System.out.println("Root exception: " + cause);
+            assertTrue(cause instanceof NoMoreInputValuesException);
+            throw e;
+        }
+
+    }
+
     private BigInteger runBoostProgram(int inputValue) throws IOException, IntComputerException {
         BigInteger[] code = IntCodeLoader
                 .getInstance()
@@ -132,7 +198,8 @@ public class IntCodeComputerTest {
                 .withMemoryAutoExpand()
                 .build();
 
-        List<BigInteger> output = intCodeComputer.executeCode();
+        ExecutionResult result = intCodeComputer.executeCode();
+        List<BigInteger> output = result.getOutput();
 
         return output.get(0);
     }

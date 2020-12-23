@@ -4,14 +4,16 @@ import static com.challenge.day11.HullPaintingRobot.createFromIntCodeComputer;
 
 import com.challenge.day11.exception.HullPaintingRobotException;
 import com.challenge.library.intcodecomputer.IntCodeComputer;
+import com.challenge.library.intcodecomputer.IntCodeComputer.ExecutionResult;
+import static com.challenge.library.intcodecomputer.IntCodeComputer.ExecutionResult.Builder.createExecutionResult;
 
 import com.challenge.library.intcodecomputer.exception.IntComputerException;
 import org.testng.annotations.Test;
 
+import java.math.BigInteger;
+
 import static java.math.BigInteger.ZERO;
 import static java.math.BigInteger.ONE;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 
 import static org.mockito.Mockito.*;
 
@@ -24,14 +26,14 @@ public class HullPaintingRobotTest {
 
         IntCodeComputer mockedComputer = mock(IntCodeComputer.class);
         when(mockedComputer.executeCode())
-                .thenReturn(singletonList(ONE)).thenReturn(singletonList(ZERO))
-                .thenReturn(singletonList(ZERO)).thenReturn(singletonList(ZERO))
-                .thenReturn(singletonList(ONE)).thenReturn(singletonList(ZERO))
-                .thenReturn(singletonList(ONE)).thenReturn(singletonList(ZERO))
-                .thenReturn(singletonList(ZERO)).thenReturn(singletonList(ONE))
-                .thenReturn(singletonList(ONE)).thenReturn(singletonList(ZERO))
-                .thenReturn(singletonList(ONE)).thenReturn(singletonList(ZERO))
-                .thenReturn(emptyList());
+                .thenReturn(createOutputExecutionResult(ONE)).thenReturn(createOutputExecutionResult(ZERO))
+                .thenReturn(createOutputExecutionResult(ZERO)).thenReturn(createOutputExecutionResult(ZERO))
+                .thenReturn(createOutputExecutionResult(ONE)).thenReturn(createOutputExecutionResult(ZERO))
+                .thenReturn(createOutputExecutionResult(ONE)).thenReturn(createOutputExecutionResult(ZERO))
+                .thenReturn(createOutputExecutionResult(ZERO)).thenReturn(createOutputExecutionResult(ONE))
+                .thenReturn(createOutputExecutionResult(ONE)).thenReturn(createOutputExecutionResult(ZERO))
+                .thenReturn(createOutputExecutionResult(ONE)).thenReturn(createOutputExecutionResult(ZERO))
+                .thenReturn(createExecutionFinishedResult());
 
         HullPaintingRobot hullPaintingRobot = createFromIntCodeComputer(mockedComputer);
         int nPaintedPanels = hullPaintingRobot.paintSpaceShipHull();
@@ -46,9 +48,9 @@ public class HullPaintingRobotTest {
 
         IntCodeComputer mockedComputer = mock(IntCodeComputer.class);
         when(mockedComputer.executeCode())
-                .thenReturn(singletonList(ONE)).thenReturn(singletonList(ZERO))
-                .thenReturn(singletonList(ZERO))
-                .thenReturn(emptyList());
+                .thenReturn(createOutputExecutionResult(ONE)).thenReturn(createOutputExecutionResult(ZERO))
+                .thenReturn(createOutputExecutionResult(ZERO))
+                .thenReturn(createExecutionFinishedResult());
 
         HullPaintingRobot hullPaintingRobot = createFromIntCodeComputer(mockedComputer);
 
@@ -78,4 +80,18 @@ public class HullPaintingRobotTest {
             assertThat(e).as("Checking exception cause...").hasCauseExactlyInstanceOf(IntComputerException.class);
         }
     }
+
+    private ExecutionResult createOutputExecutionResult(BigInteger value) {
+        return createExecutionResult()
+            .withResultType(ExecutionResult.ResultType.NEXT_OUTPUT)
+            .addOutputValue(value)
+            .build();
+    }
+
+    private ExecutionResult createExecutionFinishedResult() {
+        return createExecutionResult()
+                .withResultType(ExecutionResult.ResultType.EXECUTION_FINISHED)
+                .build();
+    }
+
 }

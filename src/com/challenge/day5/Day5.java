@@ -21,7 +21,7 @@ public class Day5 {
             System.out.println("Running diagnostic test: " + testDescription);
 
             IntCodeComputer intCodeComputer = createNewIntCodeComputer(code).withInputValue(input).build();
-            output = intCodeComputer.executeCode();
+            output = intCodeComputer.executeCode().getOutput();
 
             System.out.println("Output = " + output);
         } catch (IntComputerException e) {

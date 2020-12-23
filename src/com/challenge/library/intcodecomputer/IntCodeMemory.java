@@ -15,14 +15,16 @@ import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 public class IntCodeMemory {
     private int MAX_MEMORY_SIZE = 1_000_000;
 
-    private List<BigInteger> memory;
+    private final List<BigInteger> memory;
     private int currentPos;
+    private int previousPos;
     private BigInteger relativeBaseOffset = BigInteger.ZERO;
-    private boolean autoExpand;
+    private final boolean autoExpand;
 
-    public IntCodeMemory(List<BigInteger> memory, int StartingPos, boolean autoExpand) {
+    public IntCodeMemory(List<BigInteger> memory, int startingPos, boolean autoExpand) {
         this.memory = memory;
-        this.currentPos = StartingPos;
+        this.currentPos = startingPos;
+        this.previousPos = startingPos;
         this.autoExpand = autoExpand;
     }
 
@@ -48,11 +50,16 @@ public class IntCodeMemory {
             }
 
             Instruction instruction = builder.build();
+            previousPos = currentPos;
             currentPos = instruction.getNextInstructionPosition();
             return instruction;
         } catch (InvalidOperationException | InvalidParameterModesException e) {
             throw new InvalidInstructionException(intInstruction, currentPos, e);
         }
+    }
+
+    public void goBackToPreviousPosition() {
+        currentPos = previousPos;
     }
 
     public BigInteger getValue(BigInteger position) throws InvalidPositionException {
@@ -99,8 +106,6 @@ public class IntCodeMemory {
     private void autoExpandMemory(int newSize) throws MemoryExpandException {
         if (newSize > MAX_MEMORY_SIZE)
             throw new MemoryExpandException(newSize, MAX_MEMORY_SIZE);
-
-        //System.out.println(String.format("Expanding code memory from %d to %d", memory.size(), newSize));
 
         final int currentSize = memory.size();
         for (int i = currentSize; i < newSize; i++)

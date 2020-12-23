@@ -1,109 +1,135 @@
 package com.challenge.day13;
 
-import com.challenge.day13.exception.ArcadeCabinetException;
 import com.challenge.library.intcodecomputer.IntCodeComputer;
-import com.challenge.library.intcodecomputer.exception.IntComputerException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import static com.challenge.day13.GameController.Builder.createGameController;
+import static com.challenge.day13.ArcadeCabinet.ConfigurationInfo.Builder.createConfigurationInfo;
 
-import static com.challenge.day13.Screen.createScreen;
-import static com.challenge.library.intcodecomputer.IntCodeComputer.Builder.createNewIntCodeComputer;
+import com.challenge.day13.exception.ArcadeCabinetBuilderException;
+import com.challenge.day13.exception.ArcadeCabinetException;
 
 import java.math.BigInteger;
-import java.util.List;
 
-public class ArcadeCabinet {
-    private static final Logger logger = LogManager.getLogger();
+import static com.challenge.library.intcodecomputer.IntCodeComputer.Builder.createNewIntCodeComputer;
 
-    private final IntCodeComputer intCodeComputer;
+public interface ArcadeCabinet {
 
-    private ArcadeCabinet(IntCodeComputer intCodeComputer) {
-        this.intCodeComputer = intCodeComputer;
-    }
+    long runGame() throws ArcadeCabinetException;
 
-    public long runGame() throws ArcadeCabinetException {
-        logger.traceEntry();
-
-        try {
-            List<BigInteger> executionOutput = intCodeComputer.executeCode();
-            logger.debug("Int code computer execution output: {}", executionOutput);
-            final Screen screen = createArcadeScreenFromExecutionOutput(executionOutput);
-            return logger.traceExit(screen.countNumTilesOfType(Tile.BLOCK));
-        } catch (IntComputerException e){
-            throw new ArcadeCabinetException("Fatal error while executing the game code", e);
-        }
-    }
-
-    private Screen createArcadeScreenFromExecutionOutput(List<BigInteger> executionOutput) throws ArcadeCabinetException {
-        logger.traceEntry();
-
-        checkExecutionOutput(executionOutput);
-
-        final Screen screen = createScreen();
-
-        try {
-            for (int i = 0; i < executionOutput.size(); i += 3) {
-                screen.putTile(executionOutput.get(i).intValue(),
-                        executionOutput.get(i + 1).intValue(),
-                        executionOutput.get(i + 2).intValue());
-            }
-        } catch (ScreenException e) {
-            throw new ArcadeCabinetException("Error adding tiles to the screen", e);
-        }
-
-        return logger.traceExit(screen);
-    }
-
-    private void checkExecutionOutput(List<BigInteger> executionOutput) throws ArcadeCabinetException {
-        logger.traceEntry();
-
-        if (executionOutput.isEmpty()) {
-            throw new ArcadeCabinetException("The execution output from the IntCodeComputer contains no data");
-        }
-
-        if (executionOutput.size() % 3 != 0) {
-            throw new ArcadeCabinetException(String.format("Wrong execution output from the IntCodeComputer %d: is not a multiple of 3", executionOutput.size()));
-        }
-
-        logger.traceExit();
-    }
-
-
-    public static class Builder {
+    class Builder {
+        private final boolean isDemo;
         private IntCodeComputer intCodeComputer;
-        private IntCodeComputer.Builder intCodeComputerBuilder;
+        private GameController.Builder gameControllerBuilder;
+        private final ConfigurationInfo.Builder configInfoBuilder = createConfigurationInfo();
 
-        public static Builder createArcadeCabinet() {
-            return new Builder();
+        private Builder(boolean isDemo)
+        {
+            this.isDemo = isDemo;
         }
 
-        public Builder withIntCodeComputer(IntCodeComputer intCodeComputer) {
+        public static ArcadeCabinet.Builder createArcadeCabinetDemo() {
+            return new ArcadeCabinet.Builder(true);
+        }
+
+        public static ArcadeCabinet.Builder createArcadeCabinetFullGame() {
+            return new ArcadeCabinet.Builder(false);
+        }
+
+        public ArcadeCabinet.Builder withIntCodeComputer(IntCodeComputer intCodeComputer) {
             this.intCodeComputer = intCodeComputer;
+            createGameControllerIfNeeded();
+            return this;
+        }
+
+        public ArcadeCabinet.Builder withGameCode(BigInteger[] gameCode) {
+            intCodeComputer = createNewIntCodeComputer(gameCode)
+                    .withMemoryAutoExpand()
+                    .withFeedbackLoopMode(!isDemo)
+                    .withAskForInputMode(!isDemo)
+                    .build();
+
+            createGameControllerIfNeeded();
 
             return this;
         }
 
-        public Builder withGameCode(BigInteger[] gameCode) {
-            intCodeComputerBuilder = createNewIntCodeComputer(gameCode)
-                    .withFeedbackLoopMode(false)
-                    .withMemoryAutoExpand();
+        public ArcadeCabinet.Builder withScreenSize(int width, int height) {
+            gameControllerBuilder.withScreenSize(width, height);
 
+            return this;
+        }
+
+        public ArcadeCabinet.Builder withLoggingEnabled(int everyNMoves) {
+            configInfoBuilder.withLoggingEnabled(everyNMoves);
             return this;
         }
 
         public ArcadeCabinet build() {
-            return new ArcadeCabinet(getIntCodeComputer());
+            if (isDemo) {
+                return buildArcadeCabinetDemo();
+            } else {
+                return buildArcadeCabinetFullGame();
+            }
         }
 
-        private IntCodeComputer getIntCodeComputer() {
-            if (intCodeComputer != null) {
-                return intCodeComputer;
-            } else {
-                if (intCodeComputerBuilder == null) {
-                    throw new IllegalStateException("Expecting a call to \"withGameCode\"");
-                }
+        private void createGameControllerIfNeeded() {
+            if (!isDemo) {
+                gameControllerBuilder = createGameController(intCodeComputer);
+            }
+        }
 
-                return intCodeComputerBuilder.build();
+        private ArcadeCabinetDemo buildArcadeCabinetDemo() {
+            if (intCodeComputer != null) {
+                return new ArcadeCabinetDemo(intCodeComputer);
+            } else {
+                throw new ArcadeCabinetBuilderException("can't build an arcade cabinet demo: the int computer is not defined");
+            }
+        }
+
+        private ArcadeCabinetFullGame buildArcadeCabinetFullGame() {
+            if (gameControllerBuilder != null) {
+                return new ArcadeCabinetFullGame(gameControllerBuilder.build(), configInfoBuilder.build());
+            } else {
+                throw new ArcadeCabinetBuilderException("can't build an arcade cabinet full game: the int computer is not defined");
+            }
+        }
+    }
+
+    class ConfigurationInfo {
+        private final boolean logEnabled;
+        private final int everyNMoves;
+
+        private ConfigurationInfo(boolean logEnabled, int everyNMoves) {
+            this.logEnabled = logEnabled;
+            this.everyNMoves = everyNMoves;
+        }
+
+        public boolean isLogEnabled() {
+            return logEnabled;
+        }
+
+        public int getEveryNMoves() {
+            return everyNMoves;
+        }
+
+        public static class Builder {
+            private boolean logEnabled;
+            private int everyNMoves;
+
+            private Builder() {}
+
+            public static Builder createConfigurationInfo() {
+                return new Builder();
+            }
+
+            public Builder withLoggingEnabled(int everyNMoves) {
+                this.logEnabled = true;
+                this.everyNMoves = everyNMoves;
+
+                return this;
+            }
+
+            public ConfigurationInfo build() {
+                return new ConfigurationInfo(logEnabled, everyNMoves);
             }
         }
     }
