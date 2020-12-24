@@ -25,14 +25,6 @@ public class Instruction {
         return operation;
     }
 
-    public List<Parameter> getParameters() {
-        return parameters;
-    }
-
-    public int getPosition() {
-        return position;
-    }
-
     public int getNextInstructionPosition() {
         return position + parameters.size() + 1;
     }
@@ -206,26 +198,16 @@ public class Instruction {
 
         OUTPUT(4, 1) {
             @Override
-            public void validateParameters(List<Parameter> parameterList) {
-            }
-
-            @Override
             public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
                 return InstructionResult.ofOutput(getParameterValue(parameters.get(0), code));
             }
         },
         HALT(99, 0) {
-            public void validateParameters(List<Parameter> parameterList) {}
-
             public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) {
                 return InstructionResult.endOfExecutionResult();
             }
         },
         JUMP_IF_TRUE(5, 2) {
-            @Override
-            public void validateParameters(List<Parameter> parameterList) {
-            }
-
             @Override
             public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
                 if (getParameterValue(parameters.get(0), code).compareTo(BigInteger.ZERO) != 0) {
@@ -236,10 +218,6 @@ public class Instruction {
             }
         },
         JUMP_IF_FALSE(6, 2) {
-            @Override
-            public void validateParameters(List<Parameter> parameterList) {
-            }
-
             @Override
             public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
                 if (getParameterValue(parameters.get(0), code).compareTo(BigInteger.ZERO) == 0) {
@@ -287,10 +265,6 @@ public class Instruction {
         },
         ADJUST_RELATIVE_BASE(9, 1) {
             @Override
-            public void validateParameters(List<Parameter> parameterList) {
-            }
-
-            @Override
             public InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException {
                 code.incrementRelativeBaseOffset(getParameterValue(parameters.get(0), code));
 
@@ -337,16 +311,9 @@ public class Instruction {
             }
         }
 
-        protected void storeInstructionResult(BigInteger result, long position, BigInteger[] code) throws InvalidPositionException {
-            if (position >= code.length || position < 0)
-                throw new InvalidPositionException("Attempting to store a value to an invalid position", position, code.length);
-
-            code[(int) position] = result;
+        public void validateParameters(List<Parameter> parameterList) throws InvalidParameterModesException {
+            // Override only if the operation have some validations to do.
         }
-
-
-
-        public abstract void validateParameters(List<Parameter> parameterList) throws InvalidParameterModesException;
         public abstract InstructionResult executeInstruction(IntCodeMemory code, List<Parameter> parameters, BigInteger ...inputValues) throws InvalidPositionException;
 
         private static final Map<String, Operation> stringToEnum = Stream.of(values()).collect(toMap(Object::toString, e -> e));
@@ -391,7 +358,10 @@ public class Instruction {
         }
 
         public Builder withParameters(BigInteger ...parameters) {
-            assert parameters.length == parameterModeList.size();
+            Objects.requireNonNull(parameters);
+            if (parameters.length != parameterModeList.size()) {
+                throw new IllegalArgumentException("The size of the parameters array must mach the size of the parameter modes");
+            }
 
             Iterator<ParameterMode> it = parameterModeList.iterator();
             for (BigInteger param : parameters) {
