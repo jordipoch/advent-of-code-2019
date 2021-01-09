@@ -17,6 +17,7 @@
         </Root>
         <Logger name="com.challenge.day12" level="info" />
         <Logger name="com.challenge.day13" level="info" />
+        <Logger name="com.challenge.day14" level="debug" />
         <Logger name="com.challenge.library" level="info" />
     </Loggers>
 </Configuration>
