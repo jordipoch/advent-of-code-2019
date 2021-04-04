@@ -46,7 +46,7 @@ public class ReactionTest {
     public void testToStringMethod_1InputChemical() throws ReactionException {
         logger.info("Performing test...");
 
-        final var expectedString = "1 ORE => 1 FUEL";
+        final var expectedString = "(1 ORE => 1 FUEL)";
 
         var reaction = createReaction(Collections.singletonList(ChemicalQuantity.of(Chemical.ORE, 1)), ChemicalQuantity.of(Chemical.FUEL, 1));
         var actualString = reaction.toString();
@@ -61,7 +61,7 @@ public class ReactionTest {
     public void testToStringMethod_3InputChemicals() throws ReactionException {
         logger.info("Performing test...");
 
-        final var expectedString = "12 HKGWZ, 1 GPVTF, 8 PSHF => 9 QDVJ";
+        final var expectedString = "(12 HKGWZ, 1 GPVTF, 8 PSHF => 9 QDVJ)";
 
         final List<ChemicalQuantity> inputChemicals = Arrays.asList(
                 ChemicalQuantity.of(Chemical.of("HKGWZ"), 12),

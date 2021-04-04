@@ -18,6 +18,11 @@ import org.testng.annotations.Test;
 import static java.util.Collections.singletonList;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class NanofactoryTest {
     private static final Logger logger = LogManager.getLogger();
@@ -60,8 +65,44 @@ public class NanofactoryTest {
         logger.info("Test OK");
     }
 
-    @DataProvider(name = "inputParams")
-    public Object[][] createData1() {
+    @Test(dataProvider = "inputParams_calculateMinAmountOfORE")
+    public void testCalculateMinimumAmountOfOREToProduce1FuelParametrized(String inputFile, long expectedCost) throws ReactionReaderException, NanofactoryException {
+        logger.info("Performing test...");
+
+        testFromInputFile(inputFile, expectedCost);
+
+        logger.info("Test OK");
+    }
+
+    @Test
+    public void testCalculateAmountOfFuelProducedByXOre() throws NanofactoryException {
+        logger.info("Performing test...");
+
+        NanofactoryEngine nanofactoryEngine = givenANanofactoryEngineWithTheseOREAmountComputationResults(new Long[] {83L, 500L, 800L, 950L, 1050L});
+        Nanofactory nanofactory = andANanofactoryWithNanofactoryEngine(nanofactoryEngine);
+
+
+        final long expectedFuelQtty = 21L;
+        final long actualFuelQtty = nanofactory.calculateAmountOfFuelProducedByXOre(1000L);
+
+        verify(nanofactoryEngine, times(5)).calculateMinimumAmountOfOREToProduceXFuel(anyLong());
+        assertThat(actualFuelQtty).as("Checking fuel quatity").isEqualTo(expectedFuelQtty);
+
+        logger.info("Test OK");
+    }
+
+    @Test(dataProvider = "inputParams_calculateMaxAmountOfFUEL")
+    public void testCalculateAmountOfFuelProducedByXOre_aTrillionOREParametrized(String inputFile, long expectedFuel) throws NanofactoryException, ReactionReaderException {
+        logger.info("Performing test...");
+
+        final var A_TRILLION = 1_000_000_000_000L;
+        testCalculateAmountOfFuelProducedByXOreFromInputFile(inputFile, A_TRILLION, expectedFuel);
+
+        logger.info("Test OK");
+    }
+
+    @DataProvider(name = "inputParams_calculateMinAmountOfORE")
+    private Object[][] createData1() {
         return new Object[][] {
                 { "sampleInput1.txt", 165L},
                 { "sampleInput2.txt", 13_312L},
@@ -70,13 +111,31 @@ public class NanofactoryTest {
         };
     }
 
-    @Test(dataProvider = "inputParams")
-    public void testCalculateMinimumAmountOfOREToProduce1FuelParametrized(String inputFile, long expectedCost) throws ReactionReaderException, NanofactoryException {
-        logger.info("Performing test...");
+    @DataProvider(name = "inputParams_calculateMaxAmountOfFUEL")
+    private Object[][] createData2() {
+        return new Object[][] {
+                { "sampleInput2.txt", 82_892_753L},
+                { "sampleInput3.txt", 5_586_022L},
+                { "sampleInput4.txt", 460_664L}
+        };
+    }
 
-        testFromInputFile(inputFile, expectedCost);
+    private NanofactoryEngine givenANanofactoryEngineWithTheseOREAmountComputationResults(Long[] oreQuantities) throws NanofactoryException {
+        NanofactoryEngine nanofactoryEngine = mock(NanofactoryEngine.class);
 
-        logger.info("Test OK");
+        var methodStub = when(nanofactoryEngine.calculateMinimumAmountOfOREToProduceXFuel(anyLong()));
+        for (Long oreQuantity: oreQuantities) {
+            methodStub = methodStub.thenReturn(oreQuantity);
+        }
+
+        return nanofactoryEngine;
+    }
+
+
+    private Nanofactory andANanofactoryWithNanofactoryEngine(NanofactoryEngine nanofactoryEngine) {
+        return createNanofactory()
+                .withNanofactoryEngine(nanofactoryEngine)
+                .build();
     }
 
     private void testFromInputFile(String filename, long expectedCost) throws ReactionReaderException, NanofactoryException {
@@ -88,5 +147,16 @@ public class NanofactoryTest {
 
         logger.debug("Cost = {}", cost);
         assertThat(cost).as("Checking calculated cost...").isEqualTo(expectedCost);
+    }
+
+    private void testCalculateAmountOfFuelProducedByXOreFromInputFile(String filename, long oreQuantityAvailable, long expectedFuel) throws ReactionReaderException, NanofactoryException {
+        final var nanofactory = createNanofactory()
+                .withReactions(readReactionsFromFile(filename))
+                .build();
+
+        long actualFuel = nanofactory.calculateAmountOfFuelProducedByXOre(oreQuantityAvailable);
+
+        logger.debug("Fuel amount = {}", actualFuel);
+        assertThat(actualFuel).as("Checking calculated fuel amount...").isEqualTo(expectedFuel);
     }
 }

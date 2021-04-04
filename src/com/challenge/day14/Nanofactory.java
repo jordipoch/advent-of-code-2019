@@ -1,5 +1,6 @@
 package com.challenge.day14;
 
+import com.challenge.day14.exception.FuelComputationHelperException;
 import com.challenge.day14.exception.NanofactoryException;
 import static com.challenge.day14.Chemical.FUEL;
 import static com.challenge.day14.Chemical.ORE;
@@ -9,10 +10,6 @@ import static com.challenge.day14.Chemical.NAME_ORE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static org.apache.commons.lang3.math.NumberUtils.max;
-
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,119 +18,48 @@ import java.util.Objects;
 public class Nanofactory {
     private static final Logger logger = LogManager.getLogger();
 
-    private final Map<Chemical, Reaction> reactions;
-    private Map<Chemical, ChemicalStock> nanofactoryStock;
-    private Deque<Chemical> controlStack;
+    private final NanofactoryEngine nanofactoryEngine;
 
-    private Nanofactory (Map<Chemical, Reaction> reactions) {
-        this.reactions = reactions;
-    }
-
-    public String getReactionsAsString() {
-        var sb = new StringBuilder();
-
-        for (var reaction: reactions.values()) {
-            sb.append(reaction + System.lineSeparator());
-        }
-
-        return sb.toString();
+    private Nanofactory(NanofactoryEngine nanofactoryEngine) {
+        this.nanofactoryEngine = nanofactoryEngine;
     }
 
     public long calculateMinimumAmountOfOREToProduce1Fuel() throws NanofactoryException {
         logger.traceEntry();
 
-        nanofactoryStock = new HashMap<>();
-        controlStack = new ArrayDeque<>();
-
-        updateStockToProduceChemicalQuantity(
-                ChemicalQuantity.of(Chemical.FUEL, 1L));
-
-        long amount = nanofactoryStock.get(ORE).getQuantityNeeded();
-
-        return logger.traceExit(amount);
+        return logger.traceExit(nanofactoryEngine.calculateMinimumAmountOfOREToProduceXFuel(1));
     }
 
-    private void updateStockToProduceChemicalQuantity(ChemicalQuantity chemicalQuantity) throws NanofactoryException {
-        logger.traceEntry();
+    public long calculateAmountOfFuelProducedByXOre(long oreQuantityAvail) throws NanofactoryException {
+        logger.traceEntry("oreQuantityAvail = {}", oreQuantityAvail);
 
-        final Chemical chemical = chemicalQuantity.getChemical();
-        final long quantity = chemicalQuantity.getQuantity();
+        final long oreFor1Fuel = nanofactoryEngine.calculateMinimumAmountOfOREToProduceXFuel(1);
+        logger.info("{} ORE -> 1 FUEL", oreFor1Fuel);
 
-        logger.debug("Chemical to produce: {}. Control Stack: {}", chemicalQuantity, controlStack);
+        long currentFuelQtty = oreQuantityAvail / oreFor1Fuel;
+        FuelComputationHelper fuelComputationHelper = new FuelComputationHelper(currentFuelQtty, oreQuantityAvail);
 
-        if (ORE.equals(chemical)) {
-            addToNanofactoryStock(chemical, ChemicalStock.of(quantity, 0L));
-            return;
-        }
+        boolean found = false;
+        while (!found) {
+            currentFuelQtty = fuelComputationHelper.getCurrentFuelQtty();
+            long oreQtty = nanofactoryEngine.calculateMinimumAmountOfOREToProduceXFuel(currentFuelQtty);
+            logger.info("{} ORE -> {} FUEL", oreQtty, currentFuelQtty);
 
-        if (controlStack.contains(chemical)) {
-            throw new NanofactoryException(String.format("Loop found in the reaction chain (Chemical %s)", chemical));
-        }
-        controlStack.addFirst(chemical);
 
-        long actualQttyNeeded;
-        if(FUEL.equals(chemical)) {
-            actualQttyNeeded = quantity;
-        } else {
-            actualQttyNeeded = getActualQuantityNeeded(chemicalQuantity);
-        }
-
-        long actualQttyProduced;
-        if (actualQttyNeeded == 0) {
-            actualQttyProduced = 0;
-        } else {
-
-            var reaction = reactions.get(chemical);
-            if (reaction == null) {
-                throw new NanofactoryException(String.format("No reaction produce %s!", chemical));
+            try {
+                found = fuelComputationHelper.updateFuelAmountsAndCheck(oreQtty);
+            } catch (FuelComputationHelperException e) {
+                throw new NanofactoryException(e);
             }
-
-            logger.debug("Reaction to produce {}: {}", chemical, reaction);
-
-            long multiplier = (long) Math.ceil((double) actualQttyNeeded / reaction.getOutputChemical().getQuantity());
-            actualQttyProduced = reaction.getOutputChemical().getQuantity() * multiplier;
-
-            for (var input : reaction.getInputChemicals()) {
-                long inputQuantityNeeded = input.getQuantity() * multiplier;
-                updateStockToProduceChemicalQuantity(ChemicalQuantity.of(input.getChemical(), inputQuantityNeeded));
-            }
-        }
-        controlStack.removeFirst();
-
-        if (!FUEL.equals(chemical)) {
-            addToNanofactoryStock(chemical, ChemicalStock.of(quantity, actualQttyProduced));
+            logger.debug(fuelComputationHelper);
         }
 
-        logger.traceExit();
-    }
-
-    private void addToNanofactoryStock(Chemical chemical, ChemicalStock stock) {
-        final var currentStock = nanofactoryStock.get(chemical);
-        if (currentStock == null) {
-            nanofactoryStock.put(chemical, stock);
-        } else {
-            nanofactoryStock.put(chemical, currentStock.add(stock));
-        }
-        logger.debug("Stock modified for {}. Current: {}. Addition: {}. New: {}.",
-                chemical, currentStock != null ? currentStock : "(Non existent)", stock, nanofactoryStock.get(chemical));
-    }
-
-    private long getActualQuantityNeeded(ChemicalQuantity chemicalQuantity) {
-        final var chemicalStock = nanofactoryStock.get(chemicalQuantity.getChemical());
-        long qtty;
-        if (chemicalStock == null) {
-            qtty = chemicalQuantity.getQuantity();
-        } else {
-            qtty = max(0L, chemicalQuantity.getQuantity() + chemicalStock.getQuantityNeeded() - chemicalStock.getQuantityProduced());
-        }
-
-        logger.debug("Actual quantity needed for ({}): {}. Current stock: {}", chemicalQuantity, qtty, chemicalStock != null ? chemicalStock : "(Non existent)");
-
-        return qtty;
+        return logger.traceExit(fuelComputationHelper.getCurrentFuelQtty());
     }
 
     public static class Builder {
         private final Map<Chemical, Reaction> reactions = new HashMap<>();
+        private NanofactoryEngine nanofactoryEngine;
 
         private Builder() {
         }
@@ -161,8 +87,21 @@ public class Nanofactory {
             return logger.traceExit(this);
         }
 
+        public Builder withNanofactoryEngine(NanofactoryEngine nanofactoryEngine) {
+            logger.traceEntry();
+
+            this.nanofactoryEngine = nanofactoryEngine;
+
+            return logger.traceExit(this);
+        }
+
         public Nanofactory build() {
-            return new Nanofactory(reactions);
+            logger.traceEntry();
+
+            if (nanofactoryEngine == null) {
+                nanofactoryEngine = new NanofactoryEngine(reactions);
+            }
+            return logger.traceExit(new Nanofactory(nanofactoryEngine));
         }
 
         private void performReactionValidations(Reaction reaction) throws NanofactoryException {
@@ -180,37 +119,6 @@ public class Nanofactory {
             if(reactions.containsKey(output)) {
                 throw new NanofactoryException("A reaction already exists to produce the chemical " + output);
             }
-        }
-    }
-
-    private static class ChemicalStock {
-        private final long quantityNeeded;
-        private final long quantityProduced;
-
-        public ChemicalStock(long quantityNeeded, long quantityProduced) {
-            this.quantityNeeded = quantityNeeded;
-            this.quantityProduced = quantityProduced;
-        }
-
-        public static ChemicalStock of(long quantityNeeded, long quantityProduced) {
-            return new ChemicalStock(quantityNeeded, quantityProduced);
-        }
-
-        public ChemicalStock add(ChemicalStock otherStock) {
-            return of(quantityNeeded + otherStock.getQuantityNeeded(), quantityProduced + otherStock.getQuantityProduced());
-        }
-
-        public long getQuantityNeeded() {
-            return quantityNeeded;
-        }
-
-        public long getQuantityProduced() {
-            return quantityProduced;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("(N:%d, P:%d)", quantityNeeded, quantityProduced);
         }
     }
 }
