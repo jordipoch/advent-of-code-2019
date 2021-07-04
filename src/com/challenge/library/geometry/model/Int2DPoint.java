@@ -3,9 +3,10 @@ package com.challenge.library.geometry.model;
 import java.util.Objects;
 
 public class Int2DPoint {
-    public static Int2DPoint ORIGIN = new Int2DPoint(0, 0);
+    public static final Int2DPoint ORIGIN = new Int2DPoint(0, 0);
 
-    int x, y;
+    private final int x;
+    private final int y;
 
     public Int2DPoint(int x, int y) {
         this.x = x;
