@@ -73,7 +73,6 @@ public class OxygenSystemCalculatorOptimized extends AbstractOxygenSystemCalcula
         }
 
         droidController.markCurrentPositionAsExplored();
-
         return true;
     }
 

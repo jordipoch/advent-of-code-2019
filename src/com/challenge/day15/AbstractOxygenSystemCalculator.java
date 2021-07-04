@@ -54,6 +54,7 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
 
         var result = getCalculationResult(maxDepth, currentDepth, oxygenFound);
         logger.info("PROCESS FINISHED. Result: {}", result);
+        logger.info("Explored space:{}{}", System.lineSeparator(), droidController.getExploredSpaceAsString());
 
         return logger.traceExit(result);
     }
@@ -68,9 +69,10 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
                 oxygenFound = tryMoveDroid(direction, currentDepth + 1);
                 if (oxygenFound) break;
             }
+
             var spaceExplored = false;
             if (possibleDirections.isEmpty()) {
-               spaceExplored = trackSpaceExplored();
+                spaceExplored = trackSpaceExplored();
             }
             return logger.traceExit(new ExploreResult(oxygenFound, spaceExplored));
         } else { // currentDepth + 1 < maxDepth
@@ -81,7 +83,8 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
                 exploreResult.merge(newExploreResult);
                 if (exploreResult.isOxygenFound()) return exploreResult;
             }
-            if (possibleDirections.size() <= 1) {
+
+            if (getDirectionsToEmptyPositions(currentDepth, maxDepth).size() <= 1) {
                 exploreResult.setAllSpaceExplored(trackSpaceExplored());
             }
             return logger.traceExit(exploreResult);
