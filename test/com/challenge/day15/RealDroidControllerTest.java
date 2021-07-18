@@ -14,9 +14,7 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 
-import static com.challenge.day15.CellType.EMPTY;
 import static com.challenge.day15.CellType.EXPLORED;
 import static com.challenge.day15.CellType.OXYGEN;
 import static com.challenge.day15.CellType.UNKNOWN;
@@ -27,6 +25,8 @@ import static com.challenge.day15.DroidDirection.WEST;
 import static com.challenge.day15.MovementResult.MOVED;
 import static com.challenge.day15.MovementResult.OXYGEN_SYSTEM;
 import static com.challenge.day15.MovementResult.WALL;
+import static com.challenge.day15.RealDroidControllerTest.MovementType.MOVE;
+import static com.challenge.day15.RealDroidControllerTest.MovementType.TRY_MOVE;
 import static com.challenge.day15.exception.DroidMoveException.ErrorType.NOT_EMPTY_CELL;
 import static com.challenge.day15.exception.DroidMoveException.ErrorType.UNEXPECTED_ENGINE_RESULT;
 import static com.challenge.library.geometry.model.Int2DPoint.ORIGIN;
@@ -141,50 +141,37 @@ public class RealDroidControllerTest {
         logger.info("Test OK");
     }
 
-    @Test
-    public void testGetNextMovementsFromCurrentPosition_fromInitialPosition() {
+    @Test (dataProvider = "testGetDirectionsToUnknownPositionsData")
+    public void testGetDirectionsToUnknownPosition(DroidDirection[] directions, MovementResult[] movementResults, MovementType[] movementTypes, DroidDirection[] expectedDirections) throws DroidEngineException, DroidMoveException {
         logger.info("Performing test...");
-
-        var nextMovements = droidController.getNextMovementsFromCurrentPosition();
-
-        assertThat(nextMovements).as("Checking list size...").hasSize(4);
-        assertThat(getNumCellsOfType(nextMovements, UNKNOWN)).as("Checking num of adjacent unknown blocks...").isEqualTo(4);
-
-        logger.info("Test OK");
-    }
-
-    @Test
-    public void testGetNextMovementsFromCurrentPosition_fromInitialPositionAfterExploringAdjacentCells() throws DroidEngineException, DroidMoveException {
-        logger.info("Performing test...");
-
-        var directions = new DroidDirection[] {NORTH, SOUTH, SOUTH, WEST, EAST, EAST, WEST};
-        var movementResults = new MovementResult[] {MOVED, MOVED, WALL, MOVED, MOVED, OXYGEN_SYSTEM, MOVED};
-        var movementTypes = new MovementType[] {MovementType.TRY_MOVE, MovementType.MOVE, MovementType.TRY_MOVE,
-                                            MovementType.TRY_MOVE, MovementType.MOVE, MovementType.TRY_MOVE, MovementType.MOVE};
 
         mockDroidMovements(movementResults);
-
         move(directions, movementResults, movementTypes);
 
-        var nextMovements = droidController.getNextMovementsFromCurrentPosition();
+        var actualDirections = droidController.getDirectionsToUnknownPositions();
 
-        assertThat(nextMovements).as("Checking list size...").hasSize(4);
-        assertThat(droidController.getDroidPosition()).as("Checking droid position...").isEqualTo(ORIGIN);
-        assertThat(getNumCellsOfType(nextMovements, UNKNOWN)).as("Checking num of adjacent unknown blocks...").isEqualTo(0);
-        assertThat(getNumCellsOfType(nextMovements, EMPTY)).as("Checking num of adjacent empty blocks...").isEqualTo(2);
-        assertThat(getNumCellsOfType(nextMovements, CellType.WALL)).as("Checking num of adjacent wall blocks...").isEqualTo(1);
-        assertThat(getNumCellsOfType(nextMovements, OXYGEN)).as("Checking num of adjacent oxygen system blocks...").isEqualTo(1);
+        assertThat(actualDirections).as("Checking directions list...").isEqualTo(Arrays.asList(expectedDirections));
 
         logger.info("Test OK");
     }
 
-    private long getNumCellsOfType(final List<NextMovement> nextMovements, final CellType cellType) {
-        return nextMovements.stream().filter(nm -> nm.getCellType() == cellType).count();
+    @Test (dataProvider = "testGetDirectionsToEmptyPositionsData")
+    public void testGetDirectionsToEmptyPosition(DroidDirection[] directions, MovementResult[] movementResults, MovementType[] movementTypes, DroidDirection[] expectedDirections) throws DroidEngineException, DroidMoveException {
+        logger.info("Performing test...");
+
+        mockDroidMovements(movementResults);
+        move(directions, movementResults, movementTypes);
+
+        var actualDirections = droidController.getDirectionsToEmptyPositions();
+
+        assertThat(actualDirections).as("Checking directions list...").isEqualTo(Arrays.asList(expectedDirections));
+
+        logger.info("Test OK");
     }
 
     private void move(DroidDirection[] directions, MovementResult[] movementResults, MovementType[] movementTypes) throws DroidEngineException, DroidMoveException {
         for (int i = 0; i < directions.length; i++) {
-            if (movementTypes[i] == MovementType.TRY_MOVE) {
+            if (movementTypes[i] == TRY_MOVE) {
                 var result = droidController.tryMoveDroid(directions[i]);
                 assertThat(result.getMovementResult()).as("Checking try move result").isEqualTo(movementResults[i]);
             } else {
@@ -194,6 +181,8 @@ public class RealDroidControllerTest {
     }
 
     private void mockDroidMovements(MovementResult[] movementResults) throws DroidEngineException {
+        if(movementResults.length == 0) return;
+
         var ongoingStubbing = when(droid.move(any())).thenReturn(movementResults[0]);
         for (int i = 1; i < movementResults.length; i++) {
             ongoingStubbing = ongoingStubbing.thenReturn(movementResults[i]);
@@ -204,17 +193,17 @@ public class RealDroidControllerTest {
     private Iterator<Object[]> createTryMoveSimpleTestCombinations() {
         return Arrays.asList(
                 new Object[] {NORTH, MOVED, new Int2DPoint(0, 1)},
-                new Object[] {NORTH, MovementResult.WALL, ORIGIN},
-                new Object[] {NORTH, MovementResult.OXYGEN_SYSTEM, new Int2DPoint(0, 1)},
+                new Object[] {NORTH, WALL, ORIGIN},
+                new Object[] {NORTH, OXYGEN_SYSTEM, new Int2DPoint(0, 1)},
                 new Object[] {SOUTH, MOVED, new Int2DPoint(0, -1)},
-                new Object[] {SOUTH, MovementResult.WALL, ORIGIN},
-                new Object[] {SOUTH, MovementResult.OXYGEN_SYSTEM, new Int2DPoint(0, -1)},
+                new Object[] {SOUTH, WALL, ORIGIN},
+                new Object[] {SOUTH, OXYGEN_SYSTEM, new Int2DPoint(0, -1)},
                 new Object[] {EAST, MOVED, new Int2DPoint(1, 0)},
-                new Object[] {EAST, MovementResult.WALL, ORIGIN},
-                new Object[] {EAST, MovementResult.OXYGEN_SYSTEM, new Int2DPoint(1, 0)},
-                new Object[] {DroidDirection.WEST, MOVED, new Int2DPoint(-1, 0)},
-                new Object[] {DroidDirection.WEST, MovementResult.WALL, ORIGIN},
-                new Object[] {DroidDirection.WEST, MovementResult.OXYGEN_SYSTEM, new Int2DPoint(-1, 0)}
+                new Object[] {EAST, WALL, ORIGIN},
+                new Object[] {EAST, OXYGEN_SYSTEM, new Int2DPoint(1, 0)},
+                new Object[] {WEST, MOVED, new Int2DPoint(-1, 0)},
+                new Object[] {WEST, WALL, ORIGIN},
+                new Object[] {WEST, OXYGEN_SYSTEM, new Int2DPoint(-1, 0)}
         ).iterator();
     }
 
@@ -253,14 +242,14 @@ public class RealDroidControllerTest {
     @DataProvider(name = "moveErrorUnexpectedMovementResult")
     private Iterator<Object[]> createMoveTestErrorUnexpectedMovementResult() {
         return Arrays.asList(
-                new Object[] {NORTH, MovementResult.WALL},
-                new Object[] {NORTH, MovementResult.OXYGEN_SYSTEM},
-                new Object[] {SOUTH, MovementResult.WALL},
-                new Object[] {SOUTH, MovementResult.OXYGEN_SYSTEM},
-                new Object[] {EAST, MovementResult.WALL},
-                new Object[] {EAST, MovementResult.OXYGEN_SYSTEM},
-                new Object[] {DroidDirection.WEST, MovementResult.WALL},
-                new Object[] {DroidDirection.WEST, MovementResult.OXYGEN_SYSTEM}
+                new Object[] {NORTH, WALL},
+                new Object[] {NORTH, OXYGEN_SYSTEM},
+                new Object[] {SOUTH, WALL},
+                new Object[] {SOUTH, OXYGEN_SYSTEM},
+                new Object[] {EAST, WALL},
+                new Object[] {EAST, OXYGEN_SYSTEM},
+                new Object[] {WEST, WALL},
+                new Object[] {WEST, OXYGEN_SYSTEM}
         ).iterator();
     }
 
@@ -269,28 +258,75 @@ public class RealDroidControllerTest {
         return Arrays.asList(
                 new Object[]{new DroidDirection[] {NORTH, SOUTH},
                             new MovementResult[] {MOVED, MOVED},
-                            new MovementType[] {MovementType.TRY_MOVE, MovementType.MOVE},
+                            new MovementType[] {TRY_MOVE, MOVE},
                             ORIGIN},
                 new Object[]{new DroidDirection[] {NORTH, EAST, SOUTH, WEST},
                             new MovementResult[] {MOVED, MOVED, MOVED, MOVED},
-                            new MovementType[] {MovementType.TRY_MOVE, MovementType.TRY_MOVE, MovementType.TRY_MOVE, MovementType.MOVE},
+                            new MovementType[] {TRY_MOVE, TRY_MOVE, TRY_MOVE, MOVE},
                             ORIGIN},
                 new Object[]{new DroidDirection[] {NORTH, NORTH},
                             new MovementResult[] {MOVED, MOVED},
-                            new MovementType[] {MovementType.TRY_MOVE, MovementType.TRY_MOVE},
+                            new MovementType[] {TRY_MOVE, TRY_MOVE},
                             new Int2DPoint(0, 2)},
                 new Object[]{new DroidDirection[] {NORTH, EAST, SOUTH},
                             new MovementResult[] {MOVED, WALL, MOVED},
-                            new MovementType[] {MovementType.TRY_MOVE, MovementType.TRY_MOVE, MovementType.MOVE},
+                            new MovementType[] {TRY_MOVE, TRY_MOVE, MOVE},
                             ORIGIN},
                 new Object[]{new DroidDirection[] {NORTH, EAST, SOUTH, WEST, SOUTH},
                             new MovementResult[] {MOVED, WALL, MOVED, MOVED, OXYGEN_SYSTEM},
-                            new MovementType[] {MovementType.TRY_MOVE, MovementType.TRY_MOVE, MovementType.TRY_MOVE, MovementType.TRY_MOVE, MovementType.TRY_MOVE},
+                            new MovementType[] {TRY_MOVE, TRY_MOVE, TRY_MOVE, TRY_MOVE, TRY_MOVE},
                             new Int2DPoint(-1, -1)}
         ).iterator();
     }
 
-    private enum MovementType {
-        TRY_MOVE, MOVE;
+    @DataProvider(name = "testGetDirectionsToUnknownPositionsData")
+    private Iterator<Object[]> createTestGetDirectionsToUnknownPositionsData() {
+        return Arrays.asList(
+                new Object[] {
+                        new DroidDirection[] {},
+                        new MovementResult[] {},
+                        new MovementType[] {},
+                        new DroidDirection[] {NORTH, SOUTH, WEST, EAST}},
+                new Object[] {
+                        new DroidDirection[] {NORTH},
+                        new MovementResult[] {MOVED},
+                        new MovementType[] {TRY_MOVE},
+                        new DroidDirection[] {NORTH, WEST, EAST}},
+                new Object[] {
+                        new DroidDirection[] {NORTH, EAST, SOUTH},
+                        new MovementResult[] {MOVED, MOVED, MOVED},
+                        new MovementType[] {TRY_MOVE, TRY_MOVE, TRY_MOVE},
+                        new DroidDirection[] {SOUTH, EAST}}
+        ).iterator();
+    }
+
+    @DataProvider(name = "testGetDirectionsToEmptyPositionsData")
+    private Iterator<Object[]> createTestGetDirectionsToEmptyPositionsData() {
+        return Arrays.asList(
+                new Object[] {
+                        new DroidDirection[] {},
+                        new MovementResult[] {},
+                        new MovementType[] {},
+                        new DroidDirection[] {}},
+                new Object[] {
+                        new DroidDirection[] {NORTH},
+                        new MovementResult[] {MOVED},
+                        new MovementType[] {TRY_MOVE},
+                        new DroidDirection[] {SOUTH}},
+                new Object[] {
+                        new DroidDirection[] {NORTH, EAST, SOUTH},
+                        new MovementResult[] {MOVED, MOVED, MOVED},
+                        new MovementType[] {TRY_MOVE, TRY_MOVE, TRY_MOVE},
+                        new DroidDirection[] {NORTH, WEST}},
+                new Object[] {
+                        new DroidDirection[] {NORTH, SOUTH, SOUTH, WEST, EAST, EAST, WEST},
+                        new MovementResult[] {MOVED, MOVED, WALL, MOVED, MOVED, OXYGEN_SYSTEM, MOVED},
+                        new MovementType[] {TRY_MOVE, MOVE, TRY_MOVE, TRY_MOVE, MOVE, TRY_MOVE, MOVE},
+                        new DroidDirection[] {NORTH, WEST}}
+        ).iterator();
+    }
+
+    public enum MovementType {
+        TRY_MOVE, MOVE
     }
 }

@@ -65,15 +65,14 @@ public class OxygenSystemCalculatorOptimized extends AbstractOxygenSystemCalcula
     }
 
     @Override
-    protected boolean trackSpaceExplored() {
+    protected void trackSpaceExplored() {
         logger.traceEntry();
 
-        if (!optimizationOptions.isDiscardExploredPaths()) {
-            return false;
+        if (optimizationOptions.isDiscardExploredPaths()) {
+            droidController.markCurrentPositionAsExplored();
         }
 
-        droidController.markCurrentPositionAsExplored();
-        return true;
+        logger.traceExit();
     }
 
     public static class OptimizationOptions {

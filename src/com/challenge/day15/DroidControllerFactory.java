@@ -18,10 +18,6 @@ public class DroidControllerFactory {
         }
     }
 
-    public DroidController createDroidController(Droid droid) {
-        return RealDroidController.Builder.createDroidController().withDroid(droid).build();
-    }
-
     public DroidController createDroidController(Droid droid, Grid grid) {
         return RealDroidController.Builder.createDroidController().withDroid(droid).withGrid(grid).build();
     }

@@ -10,7 +10,8 @@ public interface DroidController {
     void moveDroid(DroidDirection direction) throws DroidMoveException, DroidEngineException;
     TryMoveDroidResult tryMoveDroid(DroidDirection direction) throws DroidEngineException;
     Int2DPoint getDroidPosition();
-    List<NextMovement> getNextMovementsFromCurrentPosition();
+    List<DroidDirection> getDirectionsToEmptyPositions();
+    List<DroidDirection> getDirectionsToUnknownPositions();
     String getExploredSpaceAsString();
     void markCurrentPositionAsExplored();
 }

@@ -7,9 +7,6 @@ import com.challenge.day15.exception.OxygenSystemException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static com.challenge.day15.CalculationResult.Builder.createResultFound;
 import static com.challenge.day15.CalculationResult.Builder.createResultFoundNotFound;
 
@@ -32,17 +29,16 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
         numMovements = 0;
         this.maxMovements = maxMovements;
         var currentDepth = 1;
-        var oxygenFound = false;
         var processFinished = false;
+        ExploreResult exploreResult;
 
         try {
             do {
-                newPositionFound = false;
-                var exploreResult = exploreInDepth(0, currentDepth);
+                exploreResult = exploreInDepth(0, currentDepth);
                 logger.debug("Explored space at depth {}:{}{}", currentDepth, System.lineSeparator(), droidController.getExploredSpaceAsString());
 
-                oxygenFound = exploreResult.isOxygenFound();
-                processFinished = oxygenFound || !newPositionFound || currentDepth >= maxDepth;
+                newPositionFound = exploreResult.isNewPositionFound();
+                processFinished = isProcessFinished(maxDepth, currentDepth, exploreResult);
                 if (!processFinished) currentDepth++;
             } while (!processFinished);
         } catch (DroidEngineException | DroidMoveException e) {
@@ -52,43 +48,57 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
             return logger.traceExit(createResultFoundNotFound(numMovements).withCauseMaxMovementsExceeded(maxMovements, currentDepth).build());
         }
 
-        var result = getCalculationResult(maxDepth, currentDepth, oxygenFound);
+        var result = getCalculationResult(maxDepth, currentDepth, exploreResult);
         logger.info("PROCESS FINISHED. Result: {}", result);
         logger.info("Explored space:{}{}", System.lineSeparator(), droidController.getExploredSpaceAsString());
 
         return logger.traceExit(result);
     }
 
-    protected ExploreResult exploreInDepth(int currentDepth, int maxDepth) throws DroidEngineException, DroidMoveException, MaxMovementsExceededException {
+    private ExploreResult exploreInDepth(int currentDepth, int maxDepth) throws DroidEngineException, DroidMoveException, MaxMovementsExceededException {
         logger.traceEntry("Exploring in depth... currentDepth={}, maxDepth={}", currentDepth, maxDepth);
 
         if (currentDepth + 1 == maxDepth) {
-            var possibleDirections = getDirectionsToUnknownPositions();
-            var oxygenFound = false;
-            for (DroidDirection direction : possibleDirections) {
-                oxygenFound = tryMoveDroid(direction, currentDepth + 1);
-                if (oxygenFound) break;
-            }
-
-            var spaceExplored = false;
-            if (possibleDirections.isEmpty()) {
-                spaceExplored = trackSpaceExplored();
-            }
-            return logger.traceExit(new ExploreResult(oxygenFound, spaceExplored));
+            return exploreNewPositions(currentDepth);
         } else { // currentDepth + 1 < maxDepth
-            var possibleDirections = getDirectionsToEmptyPositions(currentDepth, maxDepth);
-            var exploreResult = new ExploreResult(false, false);
-            for (DroidDirection direction : possibleDirections) {
-                var newExploreResult = moveDroidAndExplore(direction, currentDepth, maxDepth);
-                exploreResult.merge(newExploreResult);
-                if (exploreResult.isOxygenFound()) return exploreResult;
-            }
-
-            if (getDirectionsToEmptyPositions(currentDepth, maxDepth).size() <= 1) {
-                exploreResult.setAllSpaceExplored(trackSpaceExplored());
-            }
-            return logger.traceExit(exploreResult);
+            return exploreKnownPositions(currentDepth, maxDepth);
         }
+    }
+
+    private ExploreResult exploreNewPositions(int currentDepth) throws DroidEngineException, DroidMoveException, MaxMovementsExceededException {
+        var possibleDirections = droidController.getDirectionsToUnknownPositions();
+        var exploreResult = new ExploreResult(false, false);
+        for (DroidDirection direction : possibleDirections) {
+            var newExploreResult= tryMoveDroid(direction, currentDepth + 1);
+            exploreResult.merge(newExploreResult);
+            if (exploreResult.isOxygenFound()) return exploreResult;
+        }
+
+        if (possibleDirections.isEmpty()) {
+            trackSpaceExplored();
+        }
+        return logger.traceExit(exploreResult);
+    }
+
+    private ExploreResult exploreKnownPositions(int currentDepth, int maxDepth) throws DroidEngineException, DroidMoveException, MaxMovementsExceededException {
+        var possibleDirections = droidController.getDirectionsToEmptyPositions();
+        var exploreResult = new ExploreResult(false, false);
+        for (DroidDirection direction : possibleDirections) {
+            var newExploreResult = moveDroidAndExplore(direction, currentDepth, maxDepth);
+            exploreResult.merge(newExploreResult);
+            if (exploreResult.isOxygenFound()) return exploreResult;
+        }
+
+        if (droidController.getDirectionsToEmptyPositions().size() <= 1) {
+            trackSpaceExplored();
+        }
+        return logger.traceExit(exploreResult);
+    }
+
+    private boolean isProcessFinished(int maxDepth, int currentDepth, ExploreResult exploreResult) {
+        boolean processFinished;
+        processFinished = exploreResult.isOxygenFound() || !exploreResult.isNewPositionFound() || currentDepth >= maxDepth;
+        return processFinished;
     }
 
 
@@ -96,19 +106,17 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
         return true;
     }
 
-
     protected void trackCurrentPosition(int currentDepth) {
     }
 
-    protected boolean trackSpaceExplored() {
-        return false;
+    protected void trackSpaceExplored() {
     }
 
-    private CalculationResult getCalculationResult(int maxDepth, int currentDepth, boolean oxygenFound) {
-        if (oxygenFound) {
+    private CalculationResult getCalculationResult(int maxDepth, int currentDepth, ExploreResult exploreResult) {
+        if (exploreResult.isOxygenFound()) {
             return createResultFound(currentDepth, numMovements).build();
         } else {
-            if (!newPositionFound) {
+            if (!exploreResult.isNewPositionFound()) {
                 return createResultFoundNotFound(numMovements).withCauseAllSpaceExplored(currentDepth).build();
             } else {
                 return createResultFoundNotFound(numMovements).withCauseMaxDepthExceeded(maxDepth).build();
@@ -116,7 +124,7 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
         }
     }
 
-    private boolean tryMoveDroid(DroidDirection direction, int currentDepth) throws DroidEngineException, DroidMoveException, MaxMovementsExceededException {
+    private ExploreResult tryMoveDroid(DroidDirection direction, int currentDepth) throws DroidEngineException, DroidMoveException, MaxMovementsExceededException {
         if (numMovements == maxMovements) {
             throw new MaxMovementsExceededException(maxMovements);
         }
@@ -141,9 +149,7 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
             default -> logger.warn("Unknown result found ({})!", result.getMovementResult());
         }
 
-        newPositionFound |= result.isPositionNew();
-
-        return oxygenFound;
+        return new ExploreResult(oxygenFound, result.isPositionNew());
     }
 
     private ExploreResult moveDroidAndExplore(DroidDirection direction, int currentDepth, int maxDepth) throws DroidEngineException, DroidMoveException, MaxMovementsExceededException {
@@ -154,7 +160,7 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
             exploreResult = exploreInDepth(currentDepth + 1, maxDepth);
         } else {
             logger.debug("Halting exploration at depth {}. Current depth = {}", currentDepth, maxDepth);
-            exploreResult = new ExploreResult(false, false);
+            exploreResult = new ExploreResult(false);
         }
 
         moveDroid(direction.getReverseDirection());
@@ -173,58 +179,30 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
         logger.debug("Moved {} direction to known position {}. Movement num {}.", direction, droidController.getDroidPosition(), numMovements);
     }
 
-    private List<DroidDirection> getDirectionsToEmptyPositions(int currentDepth, int maxDepth) {
-        logger.traceEntry("Getting directions to empty positions (current position = {}, current depth = {}, max depth = {}).", droidController.getDroidPosition(), currentDepth, maxDepth);
-
-        List<NextMovement> nextMovements = droidController.getNextMovementsFromCurrentPosition();
-        List<DroidDirection> directions = new ArrayList<>();
-        for (NextMovement nextMovement : nextMovements) {
-            if (nextMovement.getCellType() == CellType.EMPTY) {
-                directions.add(nextMovement.getDirection());
-            } else if (nextMovement.getCellType() == CellType.UNKNOWN) {
-                logger.warn("Not expecting to find UNKNOWN cell type at position {}. Current depth = {}, Max depth = {}.", droidController.getDroidPosition(), currentDepth, maxDepth);
-            }
-        }
-
-        return logger.traceExit("Got directions: ", directions);
-    }
-
-    private List<DroidDirection> getDirectionsToUnknownPositions() {
-        List<NextMovement> nextMovements = droidController.getNextMovementsFromCurrentPosition();
-        List<DroidDirection> directions = new ArrayList<>();
-        for (NextMovement nextMovement : nextMovements) {
-            if (nextMovement.getCellType() == CellType.UNKNOWN) {
-                directions.add(nextMovement.getDirection());
-            }
-        }
-
-        return directions;
-    }
-
     private static class ExploreResult {
         private boolean oxygenFound;
-        private boolean allSpaceExplored;
+        private boolean newPositionFound;
 
-        public ExploreResult(boolean oxygenFound, boolean allSpaceExplored) {
+        public ExploreResult(boolean oxygenFound) {
             this.oxygenFound = oxygenFound;
-            this.allSpaceExplored = allSpaceExplored;
+        }
+
+        public ExploreResult(boolean oxygenFound, boolean newPositionFound) {
+            this.oxygenFound = oxygenFound;
+            this.newPositionFound = newPositionFound;
         }
 
         public boolean isOxygenFound() {
             return oxygenFound;
         }
 
-        public boolean isAllSpaceExplored() {
-            return allSpaceExplored;
-        }
-
-        public void setAllSpaceExplored(boolean allSpaceExplored) {
-            this.allSpaceExplored = allSpaceExplored;
+        public boolean isNewPositionFound() {
+            return newPositionFound;
         }
 
         public void merge(ExploreResult newExploreResult) {
             oxygenFound |= newExploreResult.isOxygenFound();
-            allSpaceExplored &= newExploreResult.allSpaceExplored;
+            newPositionFound |= newExploreResult.isNewPositionFound();
         }
     }
 }

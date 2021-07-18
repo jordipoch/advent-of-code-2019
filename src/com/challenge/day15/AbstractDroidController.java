@@ -77,7 +77,35 @@ public abstract class AbstractDroidController implements DroidController {
     }
 
     @Override
-    public List<NextMovement> getNextMovementsFromCurrentPosition() {
+    public List<DroidDirection> getDirectionsToEmptyPositions() {
+        logger.traceEntry("Getting directions to empty positions (current position = {}).", getDroidPosition());
+
+        List<NextMovement> nextMovements = getNextMovementsFromCurrentPosition();
+
+        return logger.traceExit(nextMovements.stream()
+                .peek(nextMovement -> {
+                    if (nextMovement.getCellType() == CellType.UNKNOWN)
+                        logger.warn("Not expecting to find UNKNOWN cell type at position {}", nextMovement.getDirection().moveDirection(getDroidPosition()));
+                })
+                .filter(nextMovement -> nextMovement.getCellType() == CellType.EMPTY)
+                .map(NextMovement::getDirection)
+                .collect(Collectors.toList())
+        );
+    }
+
+    @Override
+    public List<DroidDirection> getDirectionsToUnknownPositions() {
+        logger.traceEntry("Getting directions to unknown positions (current position = {}).", getDroidPosition());
+
+        List<NextMovement> nextMovements = getNextMovementsFromCurrentPosition();
+        return logger.traceExit(nextMovements.stream()
+                .filter(nextMovement -> nextMovement.getCellType() == CellType.UNKNOWN)
+                .map(NextMovement::getDirection)
+                .collect(Collectors.toList())
+        );
+    }
+
+    private List<NextMovement> getNextMovementsFromCurrentPosition() {
         return DroidDirection.getAllDirections().stream()
                 .map(d -> NextMovement.of(d, grid.getCell(d.moveDirection(position)).getCellType()))
                 .collect(Collectors.toList());
