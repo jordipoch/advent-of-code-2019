@@ -10,17 +10,16 @@ public class Day15 {
         try {
             // 466050 movements with NO_GO_BACK_ALLOWED only
             // 381502 movements with NO_GO_BACK_ALLOWED and DISCARD_EXPLORED_PATHS
-            runDay15Part1();
+            var calculationResult = runDay15Part1(); // Distance: 380
+            System.out.println(calculationResult);
         } catch (OxygenSystemException e) {
             System.err.println(e);
             e.printStackTrace();
         }
     }
 
-    public static void runDay15Part1() throws OxygenSystemException {
+    public static CalculationResult runDay15Part1() throws OxygenSystemException {
         var oxygenSystemCalculator = OxygenSystemCalculatorFactory.getInstance().createOptimizedCalculator("Input.txt", NO_GO_BACK_ALLOWED, DISCARD_EXPLORED_PATHS);
-        var calculationResult = oxygenSystemCalculator.calculateMinDistanceToOxygen(1000, 1_000_000);
-
-        System.out.println(calculationResult);
+        return oxygenSystemCalculator.calculateMinDistanceToOxygen(1000, 1_000_000);
     }
 }
