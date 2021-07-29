@@ -3,25 +3,26 @@ package com.challenge.day15;
 import java.util.Objects;
 
 public class CalculationResult {
-    private boolean found;
-    private NotFoundCause notFoundCause;
-    private int minDistanceToOxygen;
-    private int numMovements;
+    private final boolean found;
+    private final NotFoundCause notFoundCause;
+    private final int minDistanceToOxygen;
+    private final int numMovementsToOxygen;
+    private final int numMovements;
 
-    private int maxDepth;
-    private int currentDepth;
-    private int maxMovements;
+    private final int maxDepth;
+    private final int currentDepth;
+    private final int maxMovements;
 
 
-    private CalculationResult(boolean found, int minDistanceToOxygen, int numMovements, NotFoundCause notFoundCause,
-                             int maxDepth, int maxMovements, int currentDepth) {
-        this.found = found;
-        this.minDistanceToOxygen = minDistanceToOxygen;
-        this.numMovements = numMovements;
-        this.notFoundCause = notFoundCause;
-        this.maxDepth = maxDepth;
-        this.maxMovements = maxMovements;
-        this.currentDepth = currentDepth;
+    private CalculationResult(Builder builder) {
+        this.found = builder.isFound();
+        this.minDistanceToOxygen = builder.getMinDistanceToOxygen();
+        this.numMovements = builder.getNumMovements();
+        this.numMovementsToOxygen = builder.getNumMovementsToOxygen();
+        this.notFoundCause = builder.getNotFoundCause();
+        this.maxDepth = builder.getMaxDepth();
+        this.maxMovements = builder.getMaxMovements();
+        this.currentDepth = builder.getCurrentDepth();
     }
 
     public boolean isFound() {
@@ -48,6 +49,10 @@ public class CalculationResult {
         return maxMovements;
     }
 
+    public int getNumMovementsToOxygen() {
+        return numMovementsToOxygen;
+    }
+
     public enum NotFoundCause {
         MAX_DEPTH_EXCEEDED, MAX_MOVEMENTS_REACHED, ALL_SPACE_EXPLORED
     }
@@ -55,7 +60,7 @@ public class CalculationResult {
     @Override
     public String toString() {
         if (found) {
-            return String.format("Oxygen system found at distance %d! (Num movements: %d).", minDistanceToOxygen, numMovements);
+            return String.format("Oxygen system found at distance %d! (Num movements: %d). Max distance: %d, Total num movements: %d", minDistanceToOxygen, numMovementsToOxygen, currentDepth, numMovements);
         } else {
             return switch (notFoundCause) {
                 case MAX_DEPTH_EXCEEDED -> String.format("Oxygen system not found! Max depth %d reached (Num movements: %d).", maxDepth, numMovements);
@@ -81,25 +86,28 @@ public class CalculationResult {
     public static class Builder {
         private final boolean found;
         private int minDistanceToOxygen;
-        private final int numMovements;
+        private int numMovements;
         private int currentDepth;
         private NotFoundCause notFoundCause;
         private int maxDepth;
         private int maxMovements;
+        private int numMovementsToOxygen;
 
         public Builder(int numMovements) {
             this.numMovements = numMovements;
             this.found = false;
         }
 
-        public Builder(int minDistanceToOxygen, int numMovements) {
+        public Builder(int minDistanceToOxygen, int maxDistanceExplored, int numMovementsToOxygen, int totalNumMovements) {
             this.minDistanceToOxygen = minDistanceToOxygen;
-            this.numMovements = numMovements;
+            this.currentDepth = maxDistanceExplored;
+            this.numMovementsToOxygen = numMovementsToOxygen;
+            this.numMovements = totalNumMovements;
             this.found = true;
         }
 
-        public static Builder createResultFound(int minDistanceToOxygen, int numMovements) {
-            return new Builder(minDistanceToOxygen, numMovements);
+        public static Builder createResultFound(int minDistanceToOxygen, int maxDistanceExplored, int numMovementsToOxygen, int totalNumMovements) {
+            return new Builder(minDistanceToOxygen, maxDistanceExplored, numMovementsToOxygen, totalNumMovements);
         }
 
         public static Builder createResultFoundNotFound(int numMovements) {
@@ -139,7 +147,39 @@ public class CalculationResult {
         }
 
         public CalculationResult build() {
-            return new CalculationResult(found, minDistanceToOxygen, numMovements, notFoundCause, maxDepth, maxMovements, currentDepth);
+            return new CalculationResult(this);
+        }
+
+        public boolean isFound() {
+            return found;
+        }
+
+        public int getMinDistanceToOxygen() {
+            return minDistanceToOxygen;
+        }
+
+        public int getNumMovements() {
+            return numMovements;
+        }
+
+        public int getCurrentDepth() {
+            return currentDepth;
+        }
+
+        public NotFoundCause getNotFoundCause() {
+            return notFoundCause;
+        }
+
+        public int getMaxDepth() {
+            return maxDepth;
+        }
+
+        public int getMaxMovements() {
+            return maxMovements;
+        }
+
+        public int getNumMovementsToOxygen() {
+            return numMovementsToOxygen;
         }
     }
 }

@@ -16,7 +16,8 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
     protected final DroidController droidController;
     protected int numMovements;
     protected int maxMovements;
-    protected boolean newPositionFound;
+    private int numMovementsOnOxygenFound;
+    private boolean stopOnOxygenFound;
 
     protected AbstractOxygenSystemCalculator(DroidController droidController) {
         this.droidController = droidController;
@@ -24,12 +25,21 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
 
     @Override
     public CalculationResult calculateMinDistanceToOxygen(int maxDepth, int maxMovements) throws OxygenSystemException {
+        return calculateMinDistanceToOxygen(maxDepth, maxMovements, true);
+    }
+
+    @Override
+    public CalculationResult calculateMinDistanceToOxygen(int maxDepth, int maxMovements, boolean stopOnOxygenFound) throws OxygenSystemException {
         logger.traceEntry("Calculating min distance to oxygen, with max depth = {}", maxDepth);
 
         numMovements = 0;
         this.maxMovements = maxMovements;
+        this.stopOnOxygenFound = stopOnOxygenFound;
         var currentDepth = 1;
+        var minDistanceToOxygen = 0;
         var processFinished = false;
+        var oxygenFound = false;
+        var newPositionFound = false;
         ExploreResult exploreResult;
 
         try {
@@ -37,8 +47,13 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
                 exploreResult = exploreInDepth(0, currentDepth);
                 logger.debug("Explored space at depth {}:{}{}", currentDepth, System.lineSeparator(), droidController.getExploredSpaceAsString());
 
+                if (exploreResult.isOxygenFound()) {
+                    minDistanceToOxygen = currentDepth;
+                }
+                oxygenFound |= exploreResult.isOxygenFound();
                 newPositionFound = exploreResult.isNewPositionFound();
-                processFinished = isProcessFinished(maxDepth, currentDepth, exploreResult);
+
+                processFinished = isProcessFinished(maxDepth, currentDepth, oxygenFound, newPositionFound, stopOnOxygenFound);
                 if (!processFinished) currentDepth++;
             } while (!processFinished);
         } catch (DroidEngineException | DroidMoveException e) {
@@ -48,7 +63,7 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
             return logger.traceExit(createResultFoundNotFound(numMovements).withCauseMaxMovementsExceeded(maxMovements, currentDepth).build());
         }
 
-        var result = getCalculationResult(maxDepth, currentDepth, exploreResult);
+        var result = getCalculationResult(maxDepth, currentDepth, oxygenFound, minDistanceToOxygen, newPositionFound);
         logger.info("PROCESS FINISHED. Result: {}", result);
         logger.info("Explored space:{}{}", System.lineSeparator(), droidController.getExploredSpaceAsString());
 
@@ -71,7 +86,7 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
         for (DroidDirection direction : possibleDirections) {
             var newExploreResult= tryMoveDroid(direction, currentDepth + 1);
             exploreResult.merge(newExploreResult);
-            if (exploreResult.isOxygenFound()) return exploreResult;
+            if (exploreResult.isOxygenFound() && stopOnOxygenFound) return exploreResult;
         }
 
         if (possibleDirections.isEmpty()) {
@@ -86,7 +101,7 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
         for (DroidDirection direction : possibleDirections) {
             var newExploreResult = moveDroidAndExplore(direction, currentDepth, maxDepth);
             exploreResult.merge(newExploreResult);
-            if (exploreResult.isOxygenFound()) return exploreResult;
+            if (exploreResult.isOxygenFound() && stopOnOxygenFound) return exploreResult;
         }
 
         if (droidController.getDirectionsToEmptyPositions().size() <= 1) {
@@ -95,9 +110,9 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
         return logger.traceExit(exploreResult);
     }
 
-    private boolean isProcessFinished(int maxDepth, int currentDepth, ExploreResult exploreResult) {
+    private boolean isProcessFinished(int maxDepth, int currentDepth, boolean oxygenFound, boolean newPositionFound, boolean stopOnOxygenFound) {
         boolean processFinished;
-        processFinished = exploreResult.isOxygenFound() || !exploreResult.isNewPositionFound() || currentDepth >= maxDepth;
+        processFinished = (oxygenFound && stopOnOxygenFound) || !newPositionFound || currentDepth >= maxDepth;
         return processFinished;
     }
 
@@ -112,11 +127,11 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
     protected void trackSpaceExplored() {
     }
 
-    private CalculationResult getCalculationResult(int maxDepth, int currentDepth, ExploreResult exploreResult) {
-        if (exploreResult.isOxygenFound()) {
-            return createResultFound(currentDepth, numMovements).build();
+    private CalculationResult getCalculationResult(int maxDepth, int currentDepth, boolean oxygenFound, int minDistanceToOxygen, boolean newPositionFound) {
+        if (oxygenFound) {
+            return createResultFound(minDistanceToOxygen, currentDepth, numMovementsOnOxygenFound, numMovements).build();
         } else {
-            if (!exploreResult.isNewPositionFound()) {
+            if (!newPositionFound) {
                 return createResultFoundNotFound(numMovements).withCauseAllSpaceExplored(currentDepth).build();
             } else {
                 return createResultFoundNotFound(numMovements).withCauseMaxDepthExceeded(maxDepth).build();
@@ -134,7 +149,7 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
 
         switch (result.getMovementResult()) {
             case OXYGEN_SYSTEM -> {
-                numMovements++;
+                numMovementsOnOxygenFound = ++numMovements;
                 logger.info("Tried and moved {} direction to new position {}. Movement num {}. OXYGEN SYSTEM FOUND!!", direction, droidController.getDroidPosition(), numMovements);
                 oxygenFound = true;
                 moveDroid(direction.getReverseDirection());
