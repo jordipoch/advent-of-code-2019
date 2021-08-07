@@ -3,6 +3,7 @@ package com.challenge.day15;
 import com.challenge.day15.exception.OxygenSystemException;
 import com.challenge.day15.mocks.DroidControllerTestFactory;
 import com.challenge.day15.mocks.exception.DroidControllerMockCreationException;
+import com.challenge.library.geometry.model.Int2DPoint;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -55,6 +56,20 @@ public class OxygenSystemCalculatorOptimizedTest {
     public void checkResultsNotFoundAllSpaceExplored() throws OxygenSystemException, DroidControllerMockCreationException {
         var result = performTest("SimpleGridMapNoOxygen.txt", 4, 500, NO_GO_BACK_ALLOWED);
         checkResultsNotFoundAllSpaceExplored(result);
+    }
+
+    @Test
+    public void testExploreAllSpace() throws DroidControllerMockCreationException, OxygenSystemException {
+        var droidControllerMock = DroidControllerTestFactory.getInstance().createDroidController("SimpleGridMap3.txt");
+        var oxygenSystemCalculator = OxygenSystemCalculatorFactory.getInstance().createOptimizedCalculator(droidControllerMock, NO_GO_BACK_ALLOWED, DISCARD_EXPLORED_PATHS);
+
+        CalculationResult result = oxygenSystemCalculator.calculateMinDistanceToOxygen(15, 1000, false);
+        System.out.println(result);
+
+        assertTrue(result.isFound());
+        assertEquals(result.getMinDistanceToOxygen(), 4);
+        assertEquals(result.getMaxDistanceExplored(), 6);
+        assertEquals(result.getOxygenPosition(), new Int2DPoint(-2, 0));
     }
 
     private CalculationResult performTest(String gridFileName, int maxDepth, int maxMovements, OxygenSystemCalculatorFactory.Optimizations... optimizations) throws OxygenSystemException, DroidControllerMockCreationException {

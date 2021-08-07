@@ -35,7 +35,7 @@ public class DroidMoveException extends Exception {
                 var movementResult = getParamN(1, MovementResult.class, params);
                 var direction = getParamN(2, DroidDirection.class, params);
                 var position = getParamN(3, Int2DPoint.class, params);
-                return String.format("Unexpected result from Droid while moving from %s direction %s: expecting %s, but got %s.", position, direction, MovementResult.MOVED, movementResult);
+                return String.format("Unexpected result from Droid while moving from %s direction %s: expecting %s or %s, but got %s.", position, direction, MovementResult.MOVED, MovementResult.OXYGEN_SYSTEM, movementResult);
             }
 
         };

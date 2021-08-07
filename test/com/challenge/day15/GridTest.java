@@ -10,6 +10,7 @@ import org.testng.annotations.Test;
 
 import static com.challenge.day15.CellType.EMPTY;
 import static com.challenge.day15.CellType.EXPLORED;
+import static com.challenge.day15.CellType.OXYGEN;
 import static com.challenge.day15.CellType.UNKNOWN;
 import static com.challenge.day15.CellType.WALL;
 import static org.testng.Assert.*;
@@ -82,4 +83,33 @@ public class GridTest {
         }
     }
 
+    @Test
+    public void testCreateResultGrid() {
+        logger.info("Performing test...");
+
+        var originalGrid = new Grid();
+        originalGrid.putCell(WALL, new Int2DPoint(1, 0));
+        originalGrid.putCell(EMPTY, new Int2DPoint(0, 1));
+        originalGrid.putCell(EXPLORED, new Int2DPoint(0, 0));
+        originalGrid.putCell(OXYGEN, new Int2DPoint(-1, 0));
+
+        var resultGrid = originalGrid.createExploredGrid();
+
+        logger.debug("Original grid: {}{}", System.lineSeparator(), originalGrid);
+        logger.debug("Newly created grid: {}{}", System.lineSeparator(), resultGrid);
+
+        assertNotNull(resultGrid);
+        assertEquals(resultGrid.getNumCells(), originalGrid.getNumCells());
+
+        for (var gridCell : originalGrid.getGridCells()) {
+            if (gridCell.getCellType() == EXPLORED) {
+                assertEquals(resultGrid.getCell(gridCell.getPosition()).getCellType(), EMPTY);
+            } else {
+                assertEquals(resultGrid.getCell(gridCell.getPosition()), gridCell);
+            }
+
+        }
+
+        logger.info("Test OK");
+    }
 }

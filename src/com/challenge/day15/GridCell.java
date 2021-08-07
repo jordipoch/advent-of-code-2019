@@ -22,5 +22,4 @@ public class GridCell {
     public Int2DPoint getPosition() {
         return position;
     }
-
 }

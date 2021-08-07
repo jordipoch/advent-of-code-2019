@@ -33,6 +33,11 @@ public enum CellType {
         public MovementResult getRelatedMovementResult() {
             throw new IllegalStateException("No related movement result exists for EXPLORED(E) cell type");
         }
+    }, INITIAL('I') {
+        @Override
+        public MovementResult getRelatedMovementResult() {
+            throw new IllegalStateException("No related movement result exists for INITIAL(I) cell type");
+        }
     };
 
     private final char charCode;

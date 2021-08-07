@@ -26,12 +26,12 @@ public abstract class AbstractDroidController implements DroidController {
         var intendedPosition = direction.moveDirection(position);
 
         var cellType = grid.getCell(intendedPosition).getCellType();
-        if (cellType != CellType.EMPTY) {
+        if (cellType != CellType.EMPTY && cellType != CellType.OXYGEN) {
             throw new DroidMoveException(DroidMoveException.ErrorType.NOT_EMPTY_CELL, cellType, intendedPosition);
         }
 
         var result = doMoveDroid(direction);
-        if (result != MovementResult.MOVED) {
+        if (result == MovementResult.WALL) {
             throw new DroidMoveException(DroidMoveException.ErrorType.UNEXPECTED_ENGINE_RESULT, result, direction, position);
         }
 
@@ -54,7 +54,11 @@ public abstract class AbstractDroidController implements DroidController {
         var cellType = grid.getCell(intendedPosition).getCellType();
         if (cellType == CellType.UNKNOWN) {
             grid.putCell(result.getCellType(), intendedPosition);
-            return logger.traceExit(TryMoveDroidResult.ofNewPosition(result));
+            if (result.getCellType() == CellType.EMPTY || result.getCellType() == CellType.OXYGEN) {
+                return logger.traceExit(TryMoveDroidResult.ofNewPosition(result));
+            } else {
+                return logger.traceExit(TryMoveDroidResult.ofKnownPosition(result));
+            }
         } else {
             logger.warn("Trying to move to a known position. Movement: {} -> {}. Cell type at destination: {}", position, intendedPosition, cellType);
             return logger.traceExit(TryMoveDroidResult.ofKnownPosition(result));
@@ -63,7 +67,7 @@ public abstract class AbstractDroidController implements DroidController {
 
     @Override
     public void markCurrentPositionAsExplored() {
-        if (!position.equals(Int2DPoint.ORIGIN)) {
+        if (!position.equals(Int2DPoint.ORIGIN) && grid.getCell(position).getCellType() == CellType.EMPTY) {
             grid.putCell(CellType.EXPLORED, position);
             logger.debug("Marked position {} as explored", position);
         }
@@ -77,7 +81,7 @@ public abstract class AbstractDroidController implements DroidController {
     }
 
     @Override
-    public List<DroidDirection> getDirectionsToEmptyPositions() {
+    public List<DroidDirection> getDirectionsToPositionsToMoveTo() {
         logger.traceEntry("Getting directions to empty positions (current position = {}).", getDroidPosition());
 
         List<NextMovement> nextMovements = getNextMovementsFromCurrentPosition();
@@ -87,7 +91,7 @@ public abstract class AbstractDroidController implements DroidController {
                     if (nextMovement.getCellType() == CellType.UNKNOWN)
                         logger.warn("Not expecting to find UNKNOWN cell type at position {}", nextMovement.getDirection().moveDirection(getDroidPosition()));
                 })
-                .filter(nextMovement -> nextMovement.getCellType() == CellType.EMPTY)
+                .filter(nextMovement -> nextMovement.getCellType() == CellType.EMPTY || nextMovement.getCellType() == CellType.OXYGEN)
                 .map(NextMovement::getDirection)
                 .collect(Collectors.toList())
         );
@@ -114,5 +118,10 @@ public abstract class AbstractDroidController implements DroidController {
     @Override
     public String getExploredSpaceAsString() {
         return grid.toString();
+    }
+
+    @Override
+    public Grid getCopyOfExploredGrid() {
+        return grid.createExploredGrid();
     }
 }

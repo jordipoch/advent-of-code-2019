@@ -4,6 +4,7 @@ import com.challenge.day15.exception.DroidEngineException;
 import com.challenge.day15.exception.DroidMoveException;
 import com.challenge.day15.exception.MaxMovementsExceededException;
 import com.challenge.day15.exception.OxygenSystemException;
+import com.challenge.library.geometry.model.Int2DPoint;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,6 +19,7 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
     protected int maxMovements;
     private int numMovementsOnOxygenFound;
     private boolean stopOnOxygenFound;
+    private Int2DPoint oxygenPosition;
 
     protected AbstractOxygenSystemCalculator(DroidController droidController) {
         this.droidController = droidController;
@@ -65,7 +67,8 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
 
         var result = getCalculationResult(maxDepth, currentDepth, oxygenFound, minDistanceToOxygen, newPositionFound);
         logger.info("PROCESS FINISHED. Result: {}", result);
-        logger.info("Explored space:{}{}", System.lineSeparator(), droidController.getExploredSpaceAsString());
+        logger.info("Explored space:{}{}", System.lineSeparator(), result.getExploredGrid());
+        logger.debug("Internal grid state:{}{}", System.lineSeparator(), droidController.getExploredSpaceAsString());
 
         return logger.traceExit(result);
     }
@@ -96,7 +99,7 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
     }
 
     private ExploreResult exploreKnownPositions(int currentDepth, int maxDepth) throws DroidEngineException, DroidMoveException, MaxMovementsExceededException {
-        var possibleDirections = droidController.getDirectionsToEmptyPositions();
+        var possibleDirections = droidController.getDirectionsToPositionsToMoveTo();
         var exploreResult = new ExploreResult(false, false);
         for (DroidDirection direction : possibleDirections) {
             var newExploreResult = moveDroidAndExplore(direction, currentDepth, maxDepth);
@@ -104,7 +107,7 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
             if (exploreResult.isOxygenFound() && stopOnOxygenFound) return exploreResult;
         }
 
-        if (droidController.getDirectionsToEmptyPositions().size() <= 1) {
+        if (droidController.getDirectionsToPositionsToMoveTo().size() <= 1) {
             trackSpaceExplored();
         }
         return logger.traceExit(exploreResult);
@@ -129,7 +132,11 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
 
     private CalculationResult getCalculationResult(int maxDepth, int currentDepth, boolean oxygenFound, int minDistanceToOxygen, boolean newPositionFound) {
         if (oxygenFound) {
-            return createResultFound(minDistanceToOxygen, currentDepth, numMovementsOnOxygenFound, numMovements).build();
+            return createResultFound(minDistanceToOxygen, numMovementsOnOxygenFound, oxygenPosition)
+                    .withMaxDistanceExplored(currentDepth - 1)
+                    .withTotalNumMovements(numMovements)
+                    .withExploredGrid(droidController.getCopyOfExploredGrid())
+                    .build();
         } else {
             if (!newPositionFound) {
                 return createResultFoundNotFound(numMovements).withCauseAllSpaceExplored(currentDepth).build();
@@ -150,8 +157,10 @@ public abstract class AbstractOxygenSystemCalculator implements OxygenSystemCalc
         switch (result.getMovementResult()) {
             case OXYGEN_SYSTEM -> {
                 numMovementsOnOxygenFound = ++numMovements;
+                oxygenPosition = droidController.getDroidPosition();
                 logger.info("Tried and moved {} direction to new position {}. Movement num {}. OXYGEN SYSTEM FOUND!!", direction, droidController.getDroidPosition(), numMovements);
                 oxygenFound = true;
+                trackCurrentPosition(currentDepth);
                 moveDroid(direction.getReverseDirection());
             }
             case MOVED -> {

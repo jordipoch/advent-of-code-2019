@@ -9,16 +9,22 @@ import static com.challenge.day15.CellType.EXPLORED;
 import static org.apache.commons.lang3.math.NumberUtils.min;
 import static org.apache.commons.lang3.math.NumberUtils.max;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.challenge.day15.CellType.UNKNOWN;
 
 public class Grid {
-    Map<Int2DPoint, GridCell> gridCellMap = new HashMap<>();
+    private Map<Int2DPoint, GridCell> gridCellMap = new HashMap<>();
 
     public Grid() {
         putCell(EMPTY, Int2DPoint.ORIGIN);
+    }
+
+    private Grid(Map<Int2DPoint, GridCell> gridCellMap) {
+        this.gridCellMap = gridCellMap;
     }
 
     public void putCell(CellType cellType, Int2DPoint position) {
@@ -26,17 +32,6 @@ public class Grid {
 
         final var newGridCell = GridCell.of(cellType, position);
         gridCellMap.put(newGridCell.getPosition(), newGridCell);
-    }
-
-    private void checkCellToPut(CellType cellType, Int2DPoint position) {
-        final var currentCell = gridCellMap.get(position);
-        if (currentCell == null) {
-            if (cellType == UNKNOWN || cellType == EXPLORED) {
-                throw new InvalidCellTypeException(position, cellType);
-            }
-        } else if (!(currentCell.getCellType() == EMPTY && cellType == EXPLORED)) {
-                throw new CellAlreadyExistsException(currentCell, cellType);
-        }
     }
 
     public GridCell getCell(Int2DPoint position) {
@@ -48,9 +43,37 @@ public class Grid {
         return gridCell;
     }
 
+    public int getNumCells() {
+        return gridCellMap.size();
+    }
+
+    public Collection<GridCell> getGridCells() {
+        return gridCellMap.values();
+    }
+
     @Override
     public String toString() {
         return gridToString();
+    }
+
+    public Grid createExploredGrid() {
+        return new Grid(gridCellMap
+                        .entrySet()
+                        .stream()
+                        .collect(Collectors.<Map.Entry<Int2DPoint, GridCell>, Int2DPoint, GridCell>toMap(
+                                Map.Entry::getKey,
+                                e -> e.getValue().getCellType() == EXPLORED ? GridCell.of(EMPTY, e.getKey()) : e.getValue())));
+    }
+
+    private void checkCellToPut(CellType cellType, Int2DPoint position) {
+        final var currentCell = gridCellMap.get(position);
+        if (currentCell == null) {
+            if (cellType == UNKNOWN || cellType == EXPLORED) {
+                throw new InvalidCellTypeException(position, cellType);
+            }
+        } else if (!(currentCell.getCellType() == EMPTY && cellType == EXPLORED)) {
+            throw new CellAlreadyExistsException(currentCell, cellType);
+        }
     }
 
     private String gridToString() {
@@ -79,7 +102,12 @@ public class Grid {
         for (var i = 0; i < arrayYSize; i++)
             for (var j = 0; j < arrayXSize; j++) {
                 var gridPosition = new Int2DPoint(j + minX, maxY - i);
-                var cellType = getCell(gridPosition).getCellType();
+                CellType cellType;
+                if (gridPosition.equals(Int2DPoint.ORIGIN)) {
+                    cellType = CellType.INITIAL;
+                } else {
+                    cellType = getCell(gridPosition).getCellType();
+                }
                 cellTypeArray[j][i] = cellType;
             }
 
