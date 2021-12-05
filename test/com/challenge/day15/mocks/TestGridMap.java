@@ -59,10 +59,24 @@ public class TestGridMap {
     public CellType getCell(Int2DPoint position) {
         var x = originOffset.getX() + position.getX();
         var y = originOffset.getY() - position.getY();
-
         checkArrayBounds(x, y, position);
 
         return gridCellMatrix[x][y];
+    }
+
+    public Int2DPoint getPositionFromInternalArrayCoordinates(int x, int y) {
+        return new Int2DPoint(
+                x - originOffset.getX(),
+                originOffset.getY() - y
+        );
+    }
+
+    public int getXSize() {
+        return xSize;
+    }
+
+    public int getYSize() {
+        return ySize;
     }
 
     private void checkArrayBounds(int x, int y, Int2DPoint position) {
@@ -118,7 +132,7 @@ public class TestGridMap {
                 ", xSize=" + xSize +
                 ", ySize=" + ySize +
                 ", content=" + System.lineSeparator() +
-                gridContent.toString() + System.lineSeparator() +
+                gridContent + System.lineSeparator() +
                 '}';
     }
     

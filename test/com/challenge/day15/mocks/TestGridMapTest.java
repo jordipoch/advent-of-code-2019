@@ -1,7 +1,6 @@
 package com.challenge.day15.mocks;
 
 import com.challenge.day15.CellType;
-import com.challenge.day15.mocks.TestGridMap;
 import com.challenge.day15.mocks.exception.TestGridMapCreationException;
 import com.challenge.day15.mocks.exception.TestGridMapOutOfBoundsException;
 import com.challenge.library.geometry.model.Int2DPoint;
@@ -80,6 +79,16 @@ public class TestGridMapTest {
         }
     }
 
+    @Test (dataProvider = "coordinatesToPointsCorrespondenceData")
+    public void testGetPointFromInternalArrayPosition(int x, int y, Int2DPoint expectedPoint, String mapFile) throws TestGridMapCreationException {
+        logger.info("Performing test...");
+
+        var testGridMap = TestGridMap.createTestGridMap(mapFile);
+        var actualPoint = testGridMap.getPositionFromInternalArrayCoordinates(x, y);
+
+        assertThat(actualPoint).as("Checking actual point from internal position...").isEqualTo(expectedPoint);
+    }
+
     @DataProvider(name = "testGridCreation")
     private Iterator<Object[]> createTestGridCreation() {
         return Arrays.asList(
@@ -115,5 +124,14 @@ public class TestGridMapTest {
                 new Int2DPoint(-3, 0),
                 new Int2DPoint(-1, 3)
         ).iterator();
+    }
+
+    @DataProvider(name = "coordinatesToPointsCorrespondenceData")
+    private Iterator<Object[]> createTestGridCoordinatesToPointsCorrespondenceData() {
+        return Arrays.asList(new Object[][] {
+                {0, 0, new Int2DPoint(-2, 2), "CellGridMapTest1.txt"},
+                {2, 2, new Int2DPoint(0, 0), "CellGridMapTest1.txt"},
+                {3, 3, new Int2DPoint(1, -1), "CellGridMapTest1.txt"}
+        }).iterator();
     }
 }

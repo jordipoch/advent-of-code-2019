@@ -18,7 +18,7 @@
         <Logger name="com.challenge.day12" level="info" />
         <Logger name="com.challenge.day13" level="info" />
         <Logger name="com.challenge.day14" level="info" />
-        <Logger name="com.challenge.day15" level="info" />
+        <Logger name="com.challenge.day15" level="debug" />
         <Logger name="com.challenge.library" level="debug" />
     </Loggers>
 </Configuration>

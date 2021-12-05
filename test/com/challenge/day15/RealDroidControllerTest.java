@@ -92,8 +92,6 @@ public class RealDroidControllerTest {
         var expectedNewPos = direction.moveDirection(ORIGIN);
         grid.putCell(CellType.WALL, expectedNewPos);
 
-        when(droid.move(direction)).thenReturn(WALL);
-
         try {
             droidController.moveDroid(direction);
         } catch (DroidMoveException e) {

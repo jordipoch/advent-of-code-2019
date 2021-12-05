@@ -6,18 +6,22 @@ import com.challenge.library.geometry.model.Int2DPoint;
 
 import static com.challenge.day15.CellType.EMPTY;
 import static com.challenge.day15.CellType.EXPLORED;
+import static com.challenge.day15.CellType.OXYGEN;
 import static org.apache.commons.lang3.math.NumberUtils.min;
 import static org.apache.commons.lang3.math.NumberUtils.max;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.challenge.day15.CellType.UNKNOWN;
 
 public class Grid {
     private Map<Int2DPoint, GridCell> gridCellMap = new HashMap<>();
+    private Int2DPoint oxygenPosition;
 
     public Grid() {
         putCell(EMPTY, Int2DPoint.ORIGIN);
@@ -32,6 +36,10 @@ public class Grid {
 
         final var newGridCell = GridCell.of(cellType, position);
         gridCellMap.put(newGridCell.getPosition(), newGridCell);
+
+        if (cellType == OXYGEN && oxygenPosition == null) {
+            oxygenPosition = position;
+        }
     }
 
     public GridCell getCell(Int2DPoint position) {
@@ -49,6 +57,17 @@ public class Grid {
 
     public Collection<GridCell> getGridCells() {
         return gridCellMap.values();
+    }
+
+    public Optional<Int2DPoint> getOxygenPosition() {
+        return Optional.ofNullable(oxygenPosition);
+    }
+
+    public List<Int2DPoint> getAdjacentEmptyPositions(Int2DPoint from) {
+        return DroidDirection.getAllDirections().stream()
+                .map(d -> d.moveDirection(from))
+                .filter(p -> getCell(p).getCellType() == EMPTY)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -71,7 +90,7 @@ public class Grid {
             if (cellType == UNKNOWN || cellType == EXPLORED) {
                 throw new InvalidCellTypeException(position, cellType);
             }
-        } else if (!(currentCell.getCellType() == EMPTY && cellType == EXPLORED)) {
+        } else if (!(currentCell.getCellType() == EMPTY && (cellType == EXPLORED || cellType == OXYGEN))) {
             throw new CellAlreadyExistsException(currentCell, cellType);
         }
     }
